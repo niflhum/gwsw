@@ -1,0 +1,2696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>公文办理单录入系统（图片版）v4</title>
+<style>
+/* ============================================================
+   设计令牌 (Design Tokens)
+   ============================================================ */
+:root {
+  --bg: #F4F1EC;
+  --card: #FFF;
+  --primary: #1B2838;
+  --accent: #C4922E;
+  --accent-hover: #A87D22;
+  --text: #2D2D2D;
+  --muted: #6B7280;
+  --border: #E5E0D8;
+  --danger: #C0392B;
+  --success: #2E7D32;
+  --warning: #E6A817;
+  --info-bg: #E8F4FD;
+  --info-border: #BEE3F8;
+  --info-text: #2B6CB0;
+  --shadow: 0 2px 12px rgba(0,0,0,.06);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --header-h: 54px;
+}
+
+/* ============================================================
+   全局重置
+   ============================================================ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+  -webkit-tap-highlight-color:transparent
+}
+
+/* ============================================================
+   顶部栏
+   ============================================================ */
+.app-header{
+  background:var(--primary);color:#fff;padding:16px 20px;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.15)
+}
+.app-header h1{font-size:18px;font-weight:600}
+.app-header .sub{font-size:12px;opacity:.7;margin-top:2px}
+
+/* ============================================================
+   Tab 导航
+   ============================================================ */
+.tabs{
+  display:flex;background:var(--card);border-bottom:1px solid var(--border);
+  position:sticky;top:var(--header-h);z-index:99
+}
+.tab{
+  flex:1;text-align:center;padding:12px 0;font-size:13px;font-weight:500;
+  color:var(--muted);cursor:pointer;position:relative;transition:color .2s
+}
+.tab.active{color:var(--primary)}
+.tab.active::after{
+  content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:28px;height:3px;background:var(--accent);border-radius:2px
+}
+
+/* ============================================================
+   内容区
+   ============================================================ */
+.content{padding:16px;max-width:640px;margin:0 auto}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ============================================================
+   卡片
+   ============================================================ */
+.card{
+  background:var(--card);border-radius:var(--radius);padding:16px;
+  margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)
+}
+
+/* ============================================================
+   上传区
+   ============================================================ */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--radius);
+  padding:40px 16px;text-align:center;cursor:pointer;
+  transition:border-color .2s,background .2s;background:var(--card);margin-bottom:12px
+}
+.upload-zone:active{border-color:var(--accent);background:#FFFBF2}
+.upload-zone .icon{font-size:40px;margin-bottom:8px}
+.upload-zone .label{font-size:15px;font-weight:500}
+.upload-zone .hint{font-size:12px;color:var(--muted);margin-top:4px}
+.upload-zone input[type=file]{display:none}
+
+/* ============================================================
+   预览
+   ============================================================ */
+.preview-wrap{text-align:center;margin-bottom:12px}
+.preview-wrap img{max-width:100%;max-height:260px;border-radius:var(--radius);box-shadow:var(--shadow)}
+
+/* ============================================================
+   OCR 文本
+   ============================================================ */
+.ocr-text-wrap{margin-bottom:12px}
+.ocr-text-wrap summary{font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;padding:6px 0}
+.ocr-text-wrap textarea{
+  width:100%;min-height:100px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:8px;font-size:12px;
+  background:#FAFAF8;resize:vertical;margin-top:4px;line-height:1.5
+}
+
+/* ============================================================
+   按钮
+   ============================================================ */
+.btn{
+  display:inline-block;padding:10px 24px;border-radius:var(--radius-sm);
+  font-size:14px;font-weight:600;border:none;cursor:pointer;
+  transition:background .2s,opacity .2s;text-align:center;line-height:1.4
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:active{background:var(--accent-hover)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline:active{background:#f5f5f5}
+.btn-small{padding:6px 12px;font-size:12px}
+.btn-block{display:block;width:100%}
+.btn:disabled{opacity:.5;pointer-events:none}
+
+/* ============================================================
+   进度条
+   ============================================================ */
+.progress-wrap{text-align:center;padding:20px 0}
+.progress-wrap .spinner{
+  width:36px;height:36px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 10px
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress-wrap .status{font-size:14px;font-weight:500}
+.progress-wrap .detail{font-size:12px;color:var(--muted);margin-top:2px}
+.progress-bar{height:5px;background:var(--border);border-radius:3px;margin-top:8px;overflow:hidden}
+.progress-bar .fill{height:100%;background:var(--accent);transition:width .2s;width:0}
+
+/* ============================================================
+   表单字段
+   ============================================================ */
+.field-group{margin-bottom:10px}
+.field-group label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;letter-spacing:.3px}
+.field-group input,.field-group textarea,.field-group select{
+  width:100%;padding:8px 10px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14px;font-family:inherit;
+  background:#FAFAF8;color:var(--text);transition:border-color .2s
+}
+.field-group input:focus,.field-group textarea:focus,.field-group select:focus{outline:none;border-color:var(--accent)}
+.field-group textarea{min-height:60px;resize:vertical;line-height:1.5}
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fields-grid .full{grid-column:1/-1}
+
+/* ============================================================
+   表单验证
+   ============================================================ */
+.field-group input.invalid,.field-group textarea.invalid,.field-group select.invalid{border-color:var(--danger);background:#FFF5F5}
+.validation-hint{font-size:11px;color:var(--danger);margin-top:2px;display:none}
+.validation-hint.show{display:block}
+
+/* ============================================================
+   提示
+   ============================================================ */
+.alert{padding:10px 12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:10px;line-height:1.4}
+.alert-info{background:var(--info-bg);border:1px solid var(--info-border);color:var(--info-text)}
+.alert-success{background:#E8F5E9;border:1px solid #C8E6C9;color:#2E7D32}
+.alert-warning{background:#FFF8E1;border:1px solid #FFE082;color:#F57F17}
+
+/* ============================================================
+   列表工具栏
+   ============================================================ */
+.list-toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+.search-input{
+  flex:1;min-width:140px;padding:8px 10px 8px 32px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;
+  background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.3-4.3'/%3E%3C/svg%3E") 10px center/14px no-repeat;
+  transition:border-color .2s
+}
+.search-input:focus{outline:none;border-color:var(--accent)}
+.list-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.list-header .count{font-size:13px;color:var(--muted);white-space:nowrap}
+
+/* ============================================================
+   条目卡片
+   ============================================================ */
+.entry-card{
+  background:var(--card);border-radius:var(--radius);padding:12px;
+  margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);
+  cursor:pointer;transition:background .1s;border-left:4px solid var(--border)
+}
+.entry-card:active{background:#fafafa}
+.entry-card.deadline-overdue{border-left-color:var(--danger)}
+.entry-card.deadline-urgent{border-left-color:var(--warning)}
+.entry-card.deadline-ok{border-left-color:var(--success)}
+.entry-card .top{display:flex;justify-content:space-between;align-items:flex-start}
+.entry-card .top-row{display:flex;align-items:flex-start}
+.entry-card .thumb{
+  width:50px;height:50px;object-fit:cover;border-radius:4px;
+  margin-right:8px;border:1px solid var(--border);flex-shrink:0;background:#eee
+}
+.entry-card .doc-id{font-weight:700;font-size:14px;color:var(--primary)}
+.entry-card .body{margin-top:6px}
+.entry-card .title{font-size:12px;color:var(--muted);line-height:1.3}
+.entry-card .meta{font-size:11px;color:#999;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+.entry-card .del-btn{font-size:11px;color:var(--danger);background:none;border:none;padding:2px 0;cursor:pointer;opacity:.6}
+.entry-card .del-btn:active{opacity:1}
+
+/* ============================================================
+   紧急程度 / 时限标签
+   ============================================================ */
+.urgency{font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px;vertical-align:middle}
+.urgency-一般{background:#E8F5E9;color:#2E7D32}
+.urgency-急件{background:#FFF3CD;color:#856404}
+.urgency-特急{background:#F8D7DA;color:#C0392B}
+.deadline-tag{font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600;display:inline-block;margin-top:4px}
+.tag-overdue{background:#F8D7DA;color:#C0392B}
+.tag-urgent{background:#FFF3CD;color:#856404}
+.tag-ok{background:#E8F5E9;color:#2E7D32}
+
+/* ============================================================
+   导出选项
+   ============================================================ */
+.export-options{margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px}
+.export-options label{font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer}
+
+/* ============================================================
+   空状态
+   ============================================================ */
+.empty-state{text-align:center;padding:36px 16px}
+.empty-state .icon{font-size:44px}
+.empty-state .msg{font-size:14px;color:var(--muted);margin-top:8px}
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--primary);color:#fff;padding:10px 20px;
+  border-radius:20px;font-size:13px;font-weight:500;z-index:999;
+  opacity:0;transition:opacity .2s;pointer-events:none;
+  max-width:90vw;text-align:center
+}
+.toast.show{opacity:1}
+.toast.interactive{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+.toast .toast-action{color:var(--accent);font-weight:700;cursor:pointer;white-space:nowrap;text-decoration:underline}
+
+/* ============================================================
+   弹窗 (详情 / 编辑)
+   ============================================================ */
+.modal-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.5);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center
+}
+.modal-panel{
+  background:var(--card);border-radius:14px 14px 0 0;
+  max-width:640px;width:100%;max-height:85vh;overflow-y:auto;
+  padding:16px;animation:slideUp .25s ease
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-panel .modal-title{
+  text-align:center;font-weight:600;font-size:15px;
+  margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)
+}
+.modal-btns{display:flex;gap:8px;margin-top:14px}
+.modal-btns .btn{flex:1}
+.detail-row{font-size:13px;line-height:1.8;word-break:break-all}
+.detail-row b{color:var(--primary)}
+.detail-img{text-align:center;margin-bottom:8px}
+.detail-img img{max-width:100%;max-height:200px;border-radius:var(--radius-sm);border:1px solid var(--border)}
+
+/* ============================================================
+   设置面板
+   ============================================================ */
+.settings-section{margin-bottom:16px}
+.settings-section h3{font-size:14px;font-weight:600;color:var(--primary);margin-bottom:8px}
+.settings-section p{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.settings-section ol{font-size:12px;color:var(--muted);line-height:1.8;padding-left:20px;margin-bottom:8px}
+.settings-section ol a{color:var(--accent);text-decoration:underline}
+.radio-group{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.radio-group label{font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer}
+.radio-group input[type=radio]{accent-color:var(--accent)}
+.engine-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:4px}
+.engine-badge.baidu{background:#E8F0FE;color:#1A73E8}
+.engine-badge.tesseract{background:#FFF3CD;color:#856404}
+.engine-status{font-size:12px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:4px}
+.engine-status .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-green{background:var(--success)}
+.dot-yellow{background:var(--warning)}
+.dot-red{background:var(--danger)}
+
+/* ============================================================
+   OCR引擎指示器
+   ============================================================ */
+.ocr-engine-indicator{
+  font-size:11px;color:var(--muted);text-align:center;
+  padding:4px 0;margin-bottom:4px
+}
+.ocr-engine-indicator .engine-name{font-weight:600}
+
+/* ============================================================
+   页脚 & 响应式
+   ============================================================ */
+.footer{text-align:center;padding:16px;font-size:11px;color:var(--muted)}
+@media(min-width:640px){.fields-grid{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部导航 ===== -->
+<div class="app-header">
+  <h1>📄 公文办理单录入系统（图片版）</h1>
+  <div class="sub">云端OCR精准识别 · 模板区域裁剪 · 离线后备</div>
+</div>
+
+<!-- ===== Tab ===== -->
+<div class="tabs">
+  <div class="tab active" data-tab="scan">📷 拍照录入</div>
+  <div class="tab" data-tab="paste">📋 粘贴录入</div>
+  <div class="tab" data-tab="list">📑 记录列表</div>
+  <div class="tab" data-tab="settings">⚙️ 设置</div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== 主内容 ===== -->
+<div class="content">
+
+  <!-- ========== Tab1: 拍照录入 ========== -->
+  <div class="tab-content active" id="tab-scan">
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="icon">📷</div>
+      <div class="label">点击拍照或选择图片</div>
+      <div class="hint">对准办理单 · 平铺光线充足 · 自动压缩存储</div>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleFileSelect(event)">
+    </div>
+
+    <div id="scanResult" style="display:none">
+      <div class="preview-wrap" id="preview"></div>
+
+      <!-- OCR引擎指示器 -->
+      <div class="ocr-engine-indicator" id="ocrEngineHint"></div>
+
+      <div class="progress-wrap" id="progress">
+        <div class="spinner"></div>
+        <div class="status">正在识别...</div>
+        <div class="detail" id="progressDetail"></div>
+        <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+      </div>
+
+      <!-- 调试日志面板 -->
+      <details id="debugLogWrap" style="display:none;margin-top:8px">
+        <summary style="cursor:pointer;color:var(--muted);font-size:12px">🔧 调试日志（排查问题用）</summary>
+        <div id="debugLog" style="margin-top:4px;padding:8px;background:#1a1a2e;color:#0f0;font-size:11px;font-family:monospace;border-radius:6px;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;line-height:1.6"></div>
+      </details>
+
+      <div class="ocr-text-wrap" id="ocrTextWrap" style="display:none">
+        <details open>
+          <summary>🔍 查看/编辑 OCR 识别原文</summary>
+          <textarea id="ocrRawText"></textarea>
+        </details>
+        <button class="btn btn-outline btn-small" onclick="reparseOCR()" style="margin-top:6px">🔄 重新解析字段</button>
+      </div>
+
+      <div class="card" id="editForm" style="display:none">
+        <div class="fields-grid">
+          <div class="field-group"><label>编号</label><input id="f_id" placeholder="如：2024-001"></div>
+          <div class="field-group">
+            <label>紧急程度</label>
+            <select id="f_urgency"><option value="">—</option><option value="一般">一般</option><option value="急件">急件</option><option value="特急">特急</option></select>
+          </div>
+          <div class="field-group"><label>来文单位</label><input id="f_sender" placeholder="发文单位名称"></div>
+          <div class="field-group"><label>来文字号</label><input id="f_docnum" placeholder="如：XX〔2024〕1号"></div>
+          <div class="field-group">
+            <label>登记日期</label><input id="f_regdate" type="date">
+            <span class="validation-hint" id="vh_f_regdate"></span>
+          </div>
+          <div class="field-group">
+            <label>办理时限</label><input id="f_deadline" type="date">
+            <span class="validation-hint" id="vh_f_deadline"></span>
+          </div>
+          <div class="field-group full"><label>文件标题</label><input id="f_title" placeholder="文件完整标题"></div>
+          <div class="field-group full"><label>拟办意见</label><textarea id="f_opinion" rows="2" placeholder="拟办意见..."></textarea></div>
+          <div class="field-group full"><label>领导批示</label><textarea id="f_leader" rows="2" placeholder="领导批示..."></textarea></div>
+          <div class="field-group full"><label>承办</label><textarea id="f_handler" rows="1" placeholder="承办部门/人员..."></textarea></div>
+        </div>
+        <div style="margin-top:8px">
+          <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer">
+            <input type="checkbox" id="saveThumbnail" checked> 保存缩略图（高质量压缩）
+          </label>
+        </div>
+        <div class="modal-btns" style="margin-top:10px">
+          <button class="btn btn-primary btn-block" onclick="saveEntry()" id="saveBtn">✅ 存入</button>
+          <button class="btn btn-outline" onclick="resetScanForm()">🔄 重新拍摄</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Tab2: 粘贴录入 ========== -->
+  <div class="tab-content" id="tab-paste">
+    <div class="card">
+      <div class="alert alert-info">💡 使用微信/QQ长按图片「提取文字」，将结果粘贴到这里，识别率更高！</div>
+      <textarea id="pasteText" style="width:100%;min-height:140px;border:1px solid var(--border);border-radius:6px;padding:10px;font-size:13px;background:#FAFAF8;resize:vertical;line-height:1.5" placeholder="在此粘贴微信/QQ提取的文字内容..."></textarea>
+      <button class="btn btn-primary btn-block" onclick="parsePastedText()" style="margin-top:10px">🔍 智能解析字段</button>
+    </div>
+    <div class="card" id="pasteForm" style="display:none">
+      <div class="fields-grid">
+        <div class="field-group"><label>编号</label><input id="p_id"></div>
+        <div class="field-group">
+          <label>紧急程度</label>
+          <select id="p_urgency"><option value="">—</option><option value="一般">一般</option><option value="急件">急件</option><option value="特急">特急</option></select>
+        </div>
+        <div class="field-group"><label>来文单位</label><input id="p_sender"></div>
+        <div class="field-group"><label>来文字号</label><input id="p_docnum"></div>
+        <div class="field-group">
+          <label>登记日期</label><input id="p_regdate" type="date">
+          <span class="validation-hint" id="vh_p_regdate"></span>
+        </div>
+        <div class="field-group">
+          <label>办理时限</label><input id="p_deadline" type="date">
+          <span class="validation-hint" id="vh_p_deadline"></span>
+        </div>
+        <div class="field-group full"><label>文件标题</label><input id="p_title"></div>
+        <div class="field-group full"><label>拟办意见</label><textarea id="p_opinion" rows="2"></textarea></div>
+        <div class="field-group full"><label>领导批示</label><textarea id="p_leader" rows="2"></textarea></div>
+        <div class="field-group full"><label>承办</label><textarea id="p_handler" rows="1"></textarea></div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="savePastedEntry()" style="margin-top:8px">✅ 存入（无图片）</button>
+    </div>
+  </div>
+
+  <!-- ========== Tab3: 记录列表 ========== -->
+  <div class="tab-content" id="tab-list">
+    <div class="list-toolbar">
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索编号 / 标题 / 单位 / 文号..." oninput="renderList()" autocomplete="off">
+    </div>
+    <div class="list-header">
+      <div class="count">共 <strong id="entryCount">0</strong> 条</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-small" onclick="exportCSV()" id="csvBtn" disabled>CSV</button>
+        <button class="btn btn-primary btn-small" onclick="exportExcel()" id="exportBtn" disabled>⬇ Excel</button>
+      </div>
+    </div>
+    <div class="export-options">
+      <label><input type="checkbox" id="exportBackupZip"> 打包为 ZIP（含图片文件）</label>
+    </div>
+    <div id="entryList"></div>
+    <div class="empty-state" id="emptyState"><div class="icon">📭</div><div class="msg">暂无记录，去拍照录入吧</div></div>
+  </div>
+
+  <!-- ========== Tab4: 设置 ========== -->
+  <div class="tab-content" id="tab-settings">
+    <!-- OCR引擎选择 -->
+    <div class="card">
+      <div class="settings-section">
+        <h3>🧠 OCR 识别引擎</h3>
+        <p>云端OCR中文识别远超Tesseract.js，推荐优先使用云端服务。</p>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="ocrEngine" value="ocrspace" id="engineOcrSpace">
+            OCR.space（推荐 · 需CORS代理 · 25K次/月）
+            <span class="engine-badge baidu">推荐</span>
+          </label>
+          <label>
+            <input type="radio" name="ocrEngine" value="baidu" id="engineBaidu">
+            百度OCR（最精准 · 需代理中转 · 1K次/月）
+            <span class="engine-badge baidu">精准</span>
+          </label>
+          <label>
+            <input type="radio" name="ocrEngine" value="tesseract" id="engineTesseract">
+            Tesseract.js（离线可用 · 准确率较低）
+            <span class="engine-badge tesseract">离线</span>
+          </label>
+        </div>
+        <div class="engine-status" id="engineStatus"></div>
+      </div>
+    </div>
+
+    <!-- OCR.space 配置 -->
+    <div class="card" id="ocrspaceConfigCard">
+      <div class="settings-section">
+        <h3>🔑 OCR.space 配置（推荐）</h3>
+        <p>每月25,000次免费，中文识别效果好。浏览器有跨域限制，需通过CORS代理中转。</p>
+        <ol>
+          <li>打开 <a href="https://ocr.space/ocrapi" target="_blank">OCR.space</a> 注册免费账号</li>
+          <li>在后台获取 <b>API Key</b></li>
+          <li>填入下方并保存</li>
+        </ol>
+        <div class="alert alert-info" style="margin-bottom:8px">💡 免费Key内置测试：不填Key也能用，但有速率限制。建议注册获取专属Key。</div>
+        <div class="field-group">
+          <label>API Key</label>
+          <input id="s_ocrspace_key" placeholder="粘贴 OCR.space API Key（可选）">
+        </div>
+        <div class="field-group">
+          <label>CORS代理地址</label>
+          <input id="s_ocrspace_proxy" placeholder="如：https://your-worker.workers.dev/?url=">
+          <span style="font-size:11px;color:var(--muted)">OCR.space API不允许浏览器直连，需CORS代理。推荐部署免费的Cloudflare Worker代理（见下方说明）。</span>
+        </div>
+        <details style="margin-top:8px;font-size:12px;color:var(--muted)">
+          <summary style="cursor:pointer;color:var(--accent)">📋 一键部署 Cloudflare Worker CORS代理（免费，10万次/天）</summary>
+          <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px">
+            <p>1. 注册 <a href="https://dash.cloudflare.com/sign-up" target="_blank">Cloudflare</a>（免费）</p>
+            <p>2. 进入 Workers & Pages → 创建 Worker</p>
+            <p>3. 粘贴以下代码并部署：</p>
+            <pre style="background:#1a1a2e;color:#e0e0e0;padding:8px;border-radius:4px;overflow-x:auto;font-size:11px">export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const target = url.searchParams.get('url');
+    if (!target) return new Response('Missing url', {status:400});
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {headers:{
+        'Access-Control-Allow-Origin':'*',
+        'Access-Control-Allow-Methods':'GET,POST,OPTIONS',
+        'Access-Control-Allow-Headers':'*'}});
+    }
+    const resp = await fetch(target, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+    });
+    const h = new Headers(resp.headers);
+    h.set('Access-Control-Allow-Origin','*');
+    return new Response(resp.body, {status:resp.status, headers:h});
+  }
+}</pre>
+            <p>4. 部署后得到URL如 <code>https://xxx.workers.dev</code></p>
+            <p>5. 在上方代理地址填入：<code>https://xxx.workers.dev/?url=</code></p>
+          </div>
+        </details>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary" onclick="saveOcrSpaceSettings()" style="flex:1">💾 保存配置</button>
+          <button class="btn btn-outline" onclick="testOcrSpaceOCR()" style="flex:1">🧪 测试连接</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 百度OCR API 配置 -->
+    <div class="card" id="baiduConfigCard">
+      <div class="settings-section">
+        <h3>🔑 百度智能云 OCR 配置（高级）</h3>
+        <p>百度OCR中文最精准，但浏览器有跨域限制，需要通过代理中转调用。</p>
+        <ol>
+          <li>打开 <a href="https://cloud.baidu.com/doc/OCR/s/dk3iqnq51" target="_blank">百度OCR文档</a> 了解详情</li>
+          <li>前往 <a href="https://console.bce.baidu.com/ai/#/ai/ocr/overview/index" target="_blank">百度智能云控制台</a></li>
+          <li>创建应用 → 获取 <b>API Key</b> 和 <b>Secret Key</b></li>
+          <li>填入下方并保存</li>
+        </ol>
+        <div class="field-group">
+          <label>API Key</label>
+          <input id="s_apikey" placeholder="粘贴百度云 API Key">
+        </div>
+        <div class="field-group">
+          <label>Secret Key</label>
+          <input id="s_secretkey" type="password" placeholder="粘贴百度云 Secret Key">
+        </div>
+        <div class="field-group">
+          <label>CORS代理地址</label>
+          <input id="s_cors_proxy" placeholder="如：https://your-worker.workers.dev/?url=">
+          <span style="font-size:11px;color:var(--muted)">百度API不允许浏览器直连，需CORS代理中转。代理地址与OCR.space通用（见上方Cloudflare Worker部署说明）。</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary" onclick="saveBaiduSettings()" style="flex:1">💾 保存配置</button>
+          <button class="btn btn-outline" onclick="testBaiduOCR()" style="flex:1">🧪 测试连接</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 识别模式 -->
+    <div class="card" id="ocrModeCard">
+      <div class="settings-section">
+        <h3>✂️ 识别模式</h3>
+        <p>利用办理单格式固定的特点，先裁剪各字段区域再识别，大幅提升准确率。</p>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="ocrMode" value="crop" id="modeCrop">
+            区域裁剪模式（适合已校准模板 · 每张图约3-5次API调用）
+          </label>
+          <label>
+            <input type="radio" name="ocrMode" value="full" id="modeFull" checked>
+            整图识别模式（推荐 · 每张图1次API调用）
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 模板校准 -->
+    <div class="card">
+      <div class="settings-section">
+        <h3>📐 模板校准（高级）</h3>
+        <p>如果裁剪区域不准，可以上传一张空白办理单照片进行校准。当前使用默认模板位置。</p>
+        <div class="upload-zone" style="padding:20px" onclick="document.getElementById('calibInput').click()">
+          <div class="label" style="font-size:13px">📷 上传空白模板照片校准</div>
+          <input type="file" id="calibInput" accept="image/*" onchange="handleCalibration(event)" style="display:none">
+        </div>
+        <div id="calibResult" style="display:none;margin-top:8px"></div>
+        <button class="btn btn-outline btn-small" onclick="resetCalibration()" style="margin-top:6px">🔄 恢复默认模板</button>
+      </div>
+    </div>
+
+    <!-- 数据管理 -->
+    <div class="card">
+      <div class="settings-section">
+        <h3>💾 数据管理</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-small" onclick="showStorageInfo()">📊 查看存储</button>
+          <button class="btn btn-outline btn-small" onclick="clearAllImages()">🗑️ 清理图片</button>
+          <button class="btn btn-outline btn-small" onclick="exportAllData()">📤 全量导出</button>
+          <button class="btn btn-outline btn-small" onclick="importData()">📥 导入数据</button>
+          <input type="file" id="importInput" accept=".json" onchange="handleImport(event)" style="display:none">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">数据仅存储于本机浏览器 · 云端OCR需联网 · v4</div>
+
+<!-- ===== CDN 依赖 ===== -->
+<!-- Tesseract.js 仅在离线模式下按需加载 -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+/* ============================================================
+   §1 核心常量
+   ============================================================ */
+var STORAGE_KEY = 'gwsw_v4';
+var DB_NAME     = 'gwsw_img';
+var IMG_STORE   = 'imgs';
+var IMG_QUALITY = 0.6;
+var IMG_MAX_W   = 1200;
+var UNDO_MS     = 5000;
+
+/* ---- 百度OCR配置 ---- */
+var BAIDU_TOKEN_KEY  = 'baidu_ocr_token';
+var BAIDU_API_KEY    = 'baidu_api_key';
+var BAIDU_SECRET_KEY = 'baidu_secret_key';
+var BAIDU_OCR_URL    = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general';
+var BAIDU_TOKEN_URL  = 'https://aip.baidubce.com/oauth/2.0/token';
+
+/* ---- OCR.space配置 ---- */
+var OCRSPACE_KEY     = 'ocrspace_api_key';
+var OCRSPACE_URL     = 'https://api.ocr.space/parse/image';
+var OCRSPACE_PROXY   = 'ocrspace_cors_proxy';  // localStorage key
+var OCRSPACE_FREE_KEY = 'K85463831388957';  // 用户注册的免费Key
+// CORS代理格式：代理URL + encodeURIComponent(目标URL)
+// 例如: https://your-worker.workers.dev/?url= + encodeURIComponent(https://api.ocr.space/parse/image)
+var CORS_PROXIES = [
+  '',  // 空串=直连（部署到HTTP服务器后可能可用）
+];
+
+/* ---- 模板区域定义（百分比坐标） ---- */
+var DEFAULT_TEMPLATE = {
+  id_row:      { left:0.08, top:0.16, width:0.84, height:0.05 },   // 编号+紧急程度 整行
+  sender_row:  { left:0.08, top:0.22, width:0.84, height:0.07 },   // 来文单位+来文字号 整行
+  date_row:    { left:0.08, top:0.30, width:0.84, height:0.07 },   // 登记日期+办理时限 整行
+  title:       { left:0.08, top:0.38, width:0.84, height:0.10 },   // 文件标题
+  opinion:     { left:0.08, top:0.49, width:0.84, height:0.13 },   // 拟办意见
+  leader:      { left:0.08, top:0.63, width:0.84, height:0.15 },   // 领导批示
+  handler:     { left:0.08, top:0.79, width:0.84, height:0.10 },   // 承办
+};
+
+/* ============================================================
+   §2 全局状态
+   ============================================================ */
+var currentImage     = null;   // 原始图片 DOM
+var compressedImage  = null;   // 压缩后 dataURL
+var ocrBusy          = false;
+var imageDB          = null;
+var editTargetId     = null;   // 编辑模式下的条目 ID
+var pendingDelete    = null;   // {id, entry, timer}
+var toastTimer       = null;
+var compressCanvas   = null;   // 复用的 offscreen canvas
+var tesseractLoaded  = false;  // Tesseract.js是否已加载
+var baiduTokenCache  = null;   // 百度access_token缓存
+
+/* ============================================================
+   §3 IndexedDB — 图片存储
+   ============================================================ */
+
+function initImageDB() {
+  return new Promise(function(y, n) {
+    var r = indexedDB.open(DB_NAME, 1);
+    r.onerror = function() { console.error('IndexedDB 初始化失败'); n(r.error); };
+    r.onsuccess = function() { imageDB = r.result; y(); };
+    r.onblocked = function() { n(new Error('DB blocked')); };
+    r.onupgradeneeded = function(e) {
+      e.target.result.createObjectStore(IMG_STORE, {keyPath:'id'});
+    };
+  });
+}
+
+function ensureDB() { return imageDB ? Promise.resolve() : initImageDB(); }
+
+function saveImage(id, dataUrl) {
+  return ensureDB().then(function() {
+    return new Promise(function(y, n) {
+      imageDB.transaction([IMG_STORE], 'readwrite')
+        .objectStore(IMG_STORE).put({id:id,data:dataUrl}).onsuccess = y;
+    });
+  });
+}
+
+function getImage(id) {
+  return ensureDB().then(function() {
+    return new Promise(function(y, n) {
+      var r = imageDB.transaction([IMG_STORE], 'readonly')
+        .objectStore(IMG_STORE).get(id);
+      r.onsuccess = function() { y(r.result ? r.result.data : null); };
+      r.onerror = n;
+    });
+  });
+}
+
+function deleteImage(id) {
+  return ensureDB().then(function() {
+    return new Promise(function(y) {
+      imageDB.transaction([IMG_STORE], 'readwrite')
+        .objectStore(IMG_STORE).delete(id).onsuccess = y;
+    });
+  });
+}
+
+/* ============================================================
+   §4 localStorage — 元数据
+   ============================================================ */
+
+function getEntries() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch(e) { console.error(e); return []; }
+}
+
+function saveEntries(list) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+  catch(e) { showToast('⚠ 存储空间不足，请清理旧记录'); }
+}
+
+/* ============================================================
+   §5 图片压缩（复用 canvas）
+   ============================================================ */
+
+function compressImage(img) {
+  return new Promise(function(y) {
+    if (!compressCanvas) compressCanvas = document.createElement('canvas');
+    var c = compressCanvas;
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    if (w > IMG_MAX_W) { h = Math.round(h * IMG_MAX_W / w); w = IMG_MAX_W; }
+    c.width = w; c.height = h;
+    var ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    y(c.toDataURL('image/jpeg', IMG_QUALITY));
+  });
+}
+
+/* ============================================================
+   §6 Tab 切换
+   ============================================================ */
+
+var tabs = document.querySelectorAll('.tab');
+tabs.forEach(function(t) {
+  t.addEventListener('click', function() {
+    tabs.forEach(function(x) { x.classList.remove('active'); });
+    t.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(function(x) { x.classList.remove('active'); });
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    if (t.dataset.tab === 'list') renderList();
+    if (t.dataset.tab === 'settings') loadSettingsUI();
+  });
+});
+
+/* ============================================================
+   §6.5 百度OCR — Token管理
+   ============================================================ */
+
+function getBaiduCredentials() {
+  var ak = localStorage.getItem(BAIDU_API_KEY);
+  var sk = localStorage.getItem(BAIDU_SECRET_KEY);
+  return (ak && sk) ? {apiKey: ak, secretKey: sk} : null;
+}
+
+function getBaiduToken() {
+  // 检查内存缓存
+  if (baiduTokenCache && baiduTokenCache.expireTime > Date.now()) {
+    return Promise.resolve(baiduTokenCache.token);
+  }
+  // 检查localStorage缓存
+  try {
+    var cached = JSON.parse(localStorage.getItem(BAIDU_TOKEN_KEY));
+    if (cached && cached.expireTime > Date.now()) {
+      baiduTokenCache = cached;
+      return Promise.resolve(cached.token);
+    }
+  } catch(e) {}
+
+  var cred = getBaiduCredentials();
+  if (!cred) return Promise.reject(new Error('未配置百度OCR API Key'));
+
+  return fetch(BAIDU_TOKEN_URL + '?grant_type=client_credentials&client_id=' + cred.apiKey + '&client_secret=' + cred.secretKey)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.access_token) {
+        var cache = {
+          token: d.access_token,
+          expireTime: Date.now() + (d.expires_in - 86400) * 1000  // 提前1天过期
+        };
+        baiduTokenCache = cache;
+        try { localStorage.setItem(BAIDU_TOKEN_KEY, JSON.stringify(cache)); } catch(e) {}
+        return d.access_token;
+      }
+      throw new Error(d.error_description || '获取Token失败: ' + (d.error || '未知'));
+    });
+}
+
+/* ============================================================
+   §6.6 百度OCR — 调用识别
+   ============================================================ */
+
+function baiduRecognize(base64Image, token) {
+  var proxy = localStorage.getItem('baidu_cors_proxy') || '';
+  var url = BAIDU_OCR_URL + '?access_token=' + token;
+  if (proxy) url = proxy + encodeURIComponent(url);
+  // 去掉 data:image/xxx;base64, 前缀
+  var b64 = base64Image;
+  if (b64.indexOf(',') >= 0) b64 = b64.split(',')[1];
+
+  return fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: 'image=' + encodeURIComponent(b64) + '&language_type=CHN_ENG&detect_direction=true'
+  }).then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error_code) {
+        throw new Error('百度OCR错误[' + d.error_code + ']: ' + (d.error_msg || '未知'));
+      }
+      return d;
+    });
+}
+
+/* ============================================================
+   §6.6b OCR.space — 识别调用（支持CORS直连）
+   ============================================================ */
+
+/* ---- 调试日志 ---- */
+function dbgLog(msg) {
+  console.log('[OCR_DBG] ' + msg);
+  var el = document.getElementById('debugLog');
+  var wrap = document.getElementById('debugLogWrap');
+  if (!el || !wrap) return;
+  wrap.style.display = '';
+  var ts = new Date().toLocaleTimeString();
+  el.innerHTML += '<span style="color:#888">[' + ts + ']</span> ' + msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+function dbgLogClear() {
+  var el = document.getElementById('debugLog');
+  var wrap = document.getElementById('debugLogWrap');
+  if (el) el.innerHTML = '';
+  if (wrap) wrap.style.display = 'none';
+}
+
+function getOcrSpaceKey() {
+  return localStorage.getItem(OCRSPACE_KEY) || OCRSPACE_FREE_KEY;
+}
+
+function ocrSpaceRecognize(base64Image) {
+  var apiKey = getOcrSpaceKey();
+  var b64 = base64Image;
+  if (b64.indexOf(',') >= 0) b64 = b64.split(',')[1];
+  dbgLog('OCR.space 开始调用 | Key: ' + apiKey.substring(0,8) + '... | 图片base64: ' + b64.length + ' chars');
+
+  var formData = new FormData();
+  formData.append('base64Image', 'data:image/jpeg;base64,' + b64);
+  formData.append('language', 'chs');
+  formData.append('OCREngine', '2');   // Engine 2 对中文更好
+  formData.append('isOverlayRequired', 'false');
+  formData.append('scale', 'true');
+
+  // 构建代理URL列表：用户配置的代理 > 内置代理列表
+  var userProxy = localStorage.getItem(OCRSPACE_PROXY) || '';
+  var proxies = [];
+  if (userProxy) {
+    proxies.push(userProxy);  // 用户配置优先
+  }
+  for (var i = 0; i < CORS_PROXIES.length; i++) {
+    if (CORS_PROXIES[i] && CORS_PROXIES[i] !== userProxy) {
+      proxies.push(CORS_PROXIES[i]);
+    }
+  }
+  proxies.push('');  // 直连放最后尝试
+  dbgLog('代理列表: [' + proxies.map(function(p){return p?p.substring(0,40)+'...':'直连';}).join(', ') + ']');
+
+  // 依次尝试各代理
+  function tryProxy(idx) {
+    if (idx >= proxies.length) {
+      dbgLog('❌ 所有代理均失败！');
+      return Promise.reject(new Error('OCR.space: 所有连接方式均失败（CORS限制），请在设置中配置CORS代理'));
+    }
+    var proxy = proxies[idx];
+    var url = OCRSPACE_URL;
+    if (proxy) {
+      url = proxy + encodeURIComponent(OCRSPACE_URL);
+    }
+    dbgLog('尝试代理[' + idx + ']: ' + (proxy ? proxy.substring(0,50) : '直连'));
+    dbgLog('请求URL: ' + url.substring(0,80) + (url.length>80?'...':''));
+
+    return fetch(url, {
+      method: 'POST',
+      headers: {'apikey': apiKey},
+      body: formData
+    }).then(function(r) {
+      dbgLog('代理[' + idx + ']响应: HTTP ' + r.status + ' ' + r.statusText);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(d) {
+      if (d.IsErroredOnProcessing) {
+        var errMsg = (d.ErrorMessage && d.ErrorMessage.length) ? d.ErrorMessage.join('; ') : '未知错误';
+        dbgLog('❌ OCR.space处理错误: ' + errMsg);
+        // E104=速率限制，不重试代理
+        if (errMsg.indexOf('E104') >= 0) throw new Error('OCR.space速率限制: ' + errMsg);
+        // API key无效 — 提示用户注册
+        if (errMsg.indexOf('invalid') >= 0 || errMsg.indexOf('403') >= 0) {
+          throw new Error('OCR.space: API Key无效，请在设置中注册免费Key（内置Key已过期）');
+        }
+        throw new Error('OCR.space错误: ' + errMsg);
+      }
+      if (!d.ParsedResults || !d.ParsedResults.length) {
+        dbgLog('❌ OCR.space返回空结果');
+        throw new Error('OCR.space: 无识别结果');
+      }
+      var textLen = d.ParsedResults[0].ParsedText ? d.ParsedResults[0].ParsedText.length : 0;
+      dbgLog('✅ 识别成功！文本长度: ' + textLen + ' chars');
+      // 成功！记住可用的代理
+      if (proxy && proxy !== localStorage.getItem(OCRSPACE_PROXY)) {
+        localStorage.setItem(OCRSPACE_PROXY, proxy);
+        dbgLog('记住可用代理: ' + proxy.substring(0,50));
+      }
+      return d;
+    }).catch(function(err) {
+      dbgLog('⚠ 代理[' + idx + ']失败: ' + err.message);
+      if (err.message.indexOf('速率限制') >= 0) throw err;  // 速率限制不重试
+      return tryProxy(idx + 1);  // 尝试下一个代理
+    });
+  }
+
+  return tryProxy(0);
+}
+
+/* ============================================================
+   §6.7 百度OCR — 模板区域裁剪
+   ============================================================ */
+
+function cropRegion(img, region) {
+  var c = document.createElement('canvas');
+  var w = img.naturalWidth || img.width;
+  var h = img.naturalHeight || img.height;
+  var x = Math.round(region.left * w);
+  var y = Math.round(region.top * h);
+  var rw = Math.round(region.width * w);
+  var rh = Math.round(region.height * h);
+  // 安全边界
+  x = Math.max(0, x); y = Math.max(0, y);
+  rw = Math.min(rw, w - x); rh = Math.min(rh, h - y);
+  c.width = rw; c.height = rh;
+  var ctx = c.getContext('2d');
+  ctx.drawImage(img, x, y, rw, rh, 0, 0, rw, rh);
+  return c.toDataURL('image/jpeg', 0.85);
+}
+
+function getTemplate() {
+  try {
+    var custom = localStorage.getItem('gwsw_template');
+    if (custom) return JSON.parse(custom);
+  } catch(e) {}
+  return DEFAULT_TEMPLATE;
+}
+
+/* ============================================================
+   §6.8 百度OCR — 区域裁剪模式识别
+   ============================================================ */
+
+function baiduCropRecognize(img, token, onProgress) {
+  var template = getTemplate();
+  var regions = [
+    {key: 'id_row',     name: '编号/紧急程度'},
+    {key: 'sender_row', name: '来文单位/字号'},
+    {key: 'date_row',   name: '日期/时限'},
+    {key: 'title',      name: '文件标题'},
+    {key: 'opinion',    name: '拟办意见'},
+    {key: 'leader',     name: '领导批示'},
+    {key: 'handler',    name: '承办'}
+  ];
+
+  var results = {};
+  var chain = Promise.resolve();
+  var total = regions.length;
+
+  regions.forEach(function(r, idx) {
+    chain = chain.then(function() {
+      onProgress(Math.round(idx / total * 100), '识别 ' + r.name + '...');
+      var cropBase64 = cropRegion(img, template[r.key]);
+      return baiduRecognize(cropBase64, token).then(function(d) {
+        var text = '';
+        if (d.words_result) {
+          text = d.words_result.map(function(w) { return w.words; }).join('\n');
+        }
+        results[r.key] = text;
+      }).catch(function(err) {
+        console.warn('区域识别失败:', r.key, err);
+        results[r.key] = '';
+      });
+    });
+  });
+
+  return chain.then(function() {
+    onProgress(95, '提取字段...');
+    return results;
+  });
+}
+
+/* ============================================================
+   §6.9 百度OCR — 整图识别模式
+   ============================================================ */
+
+function baiduFullRecognize(img, token, onProgress) {
+  onProgress(10, '压缩图片...');
+  // 压缩图片以减少传输量
+  var c = document.createElement('canvas');
+  var w = img.naturalWidth || img.width;
+  var h = img.naturalHeight || img.height;
+  var maxDim = 2000;
+  if (Math.max(w,h) > maxDim) {
+    var rr = maxDim / Math.max(w,h);
+    w = Math.round(w * rr); h = Math.round(h * rr);
+  }
+  c.width = w; c.height = h;
+  var ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  var base64 = c.toDataURL('image/jpeg', 0.8);
+
+  onProgress(30, '上传识别...');
+  return baiduRecognize(base64, token).then(function(d) {
+    onProgress(80, '解析结果...');
+    var text = '';
+    if (d.words_result) {
+      text = d.words_result.map(function(w) { return w.words; }).join('\n');
+    }
+    onProgress(95, '提取字段...');
+    return text;
+  });
+}
+
+/* ============================================================
+   §6.10 区域裁剪结果 → 字段映射
+   ============================================================ */
+
+function mapCropResultsToFields(cropResults) {
+  var f = {id:'', urgency:'', sender:'', docnum:'', regdate:'', deadline:'', title:'', opinion:'', leader:'', handler:''};
+
+  // 编号+紧急程度 行
+  var idRow = cropResults.id_row || '';
+  var idM = idRow.match(/编号[：:\s]*(\d+)/);
+  if (idM) f.id = idM[1];
+  var urgM = idRow.match(/紧急程度[：:\s]*(一般|紧急|重要|急件|特急)/);
+  if (urgM) f.urgency = urgM[1];
+
+  // 来文单位+字号 行
+  var senderRow = cropResults.sender_row || '';
+  var senderM = senderRow.match(/来文单位[：:\s]*([\u4e00-\u9fa5]{2,30}?)(?:\s|来文字号|$)/);
+  if (senderM) f.sender = senderM[1];
+  else {
+    // 尝试取"来文单位"后面的全部文字（去掉字段名和来文字号部分）
+    var si = senderRow.indexOf('来文单位');
+    if (si >= 0) {
+      var sub = senderRow.substring(si + 4).replace(/^[：:\s]+/, '');
+      var di = sub.indexOf('来文字号');
+      if (di > 0) sub = sub.substring(0, di);
+      sub = sub.trim();
+      if (sub.length >= 2) f.sender = sub;
+    }
+  }
+  var docnumM = senderRow.match(/来文字号[：:\s]*([\u4e00-\u9fa50-9【\]〔〕\[\(\(（\)\)第号]+?)(?:\s{2,}|$)/);
+  if (docnumM) f.docnum = docnumM[1].replace(/[=＝\s]+$/, '').trim();
+  else {
+    var dni = senderRow.indexOf('来文字号');
+    if (dni >= 0) {
+      var dsub = senderRow.substring(dni + 4).replace(/^[：:\s]+/, '').trim();
+      if (dsub) f.docnum = dsub;
+    }
+  }
+
+  // 日期+时限 行
+  var dateRow = cropResults.date_row || '';
+  var regM = dateRow.match(/登记日期[：:\s]*[^0-9]{0,5}(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/);
+  if (regM) f.regdate = regM[1] + '-' + pad2(regM[2]) + '-' + pad2(regM[3]);
+  else {
+    // 尝试在"登记日期"后面找日期
+    var rdi = dateRow.indexOf('登记日期');
+    if (rdi >= 0) {
+      var rdsub = dateRow.substring(rdi, rdi + 50);
+      var rdm = rdsub.match(/(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/);
+      if (rdm) f.regdate = rdm[1] + '-' + pad2(rdm[2]) + '-' + pad2(rdm[3]);
+    }
+  }
+  var dlM = dateRow.match(/办理时限[：:\s]*[^0-9]{0,5}(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/);
+  if (dlM) f.deadline = dlM[1] + '-' + pad2(dlM[2]) + '-' + pad2(dlM[3]);
+  else {
+    var dli = dateRow.indexOf('办理时限');
+    if (dli >= 0) {
+      var dlsub = dateRow.substring(dli, dli + 50);
+      var dlm = dlsub.match(/(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/);
+      if (dlm) f.deadline = dlm[1] + '-' + pad2(dlm[2]) + '-' + pad2(dlm[3]);
+    }
+  }
+
+  // 文件标题
+  var titleText = (cropResults.title || '').trim();
+  f.title = titleText.replace(/^文件标题[：:\s]*/, '').replace(/^标题[：:\s]*/, '').trim();
+
+  // 拟办意见
+  var opinionText = (cropResults.opinion || '').trim();
+  f.opinion = opinionText.replace(/^拟办意见[：:\s]*/, '').replace(/^拟办[：:\s]*/, '').trim();
+
+  // 领导批示
+  var leaderText = (cropResults.leader || '').trim();
+  f.leader = leaderText.replace(/^领导批示[：:\s]*/, '').replace(/^批示[：:\s]*/, '').trim();
+
+  // 承办
+  var handlerText = (cropResults.handler || '').trim();
+  f.handler = handlerText.replace(/^承办[：:\s]*/, '').trim();
+
+  return f;
+}
+
+/* ============================================================
+   §6.11 OCR.space — 区域裁剪模式识别
+   ============================================================ */
+
+function ocrSpaceCropRecognize(img, onProgress) {
+  var template = getTemplate();
+  var regions = [
+    {key: 'id_row',     name: '编号/紧急程度'},
+    {key: 'sender_row', name: '来文单位/字号'},
+    {key: 'date_row',   name: '日期/时限'},
+    {key: 'title',      name: '文件标题'},
+    {key: 'opinion',    name: '拟办意见'},
+    {key: 'leader',     name: '领导批示'},
+    {key: 'handler',    name: '承办'}
+  ];
+
+  var results = {};
+  var chain = Promise.resolve();
+  var total = regions.length;
+
+  regions.forEach(function(r, idx) {
+    chain = chain.then(function() {
+      onProgress(Math.round(idx / total * 100), '识别 ' + r.name + '...');
+      var cropBase64 = cropRegion(img, template[r.key]);
+      return ocrSpaceRecognize(cropBase64).then(function(d) {
+        var text = '';
+        if (d.ParsedResults && d.ParsedResults.length) {
+          text = d.ParsedResults[0].ParsedText || '';
+        }
+        results[r.key] = text;
+      }).catch(function(err) {
+        console.warn('区域识别失败:', r.key, err);
+        results[r.key] = '';
+      });
+    });
+  });
+
+  return chain.then(function() {
+    onProgress(95, '提取字段...');
+    return results;
+  });
+}
+
+/* ============================================================
+   §6.12 OCR.space — 整图识别模式
+   ============================================================ */
+
+function ocrSpaceFullRecognize(img, onProgress) {
+  onProgress(10, '压缩图片...');
+  var c = document.createElement('canvas');
+  var w = img.naturalWidth || img.width;
+  var h = img.naturalHeight || img.height;
+  dbgLog('整图模式 | 原始: ' + (img.naturalWidth||img.width) + 'x' + (img.naturalHeight||img.height));
+  var maxDim = 2000;
+  if (Math.max(w,h) > maxDim) {
+    var rr = maxDim / Math.max(w,h);
+    w = Math.round(w * rr); h = Math.round(h * rr);
+  }
+  dbgLog('整图模式 | 缩放后: ' + w + 'x' + h);
+  c.width = w; c.height = h;
+  var ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  var base64 = c.toDataURL('image/jpeg', 0.8);
+  dbgLog('整图模式 | base64长度: ' + base64.length + ' chars');
+
+  onProgress(30, '上传识别...');
+  return ocrSpaceRecognize(base64).then(function(d) {
+    onProgress(80, '解析结果...');
+    var text = '';
+    if (d.ParsedResults && d.ParsedResults.length) {
+      text = d.ParsedResults[0].ParsedText || '';
+    }
+    dbgLog('整图OCR结果前200字: ' + text.substring(0,200).replace(/\n/g, '\\n'));
+    onProgress(95, '提取字段...');
+    return text;
+  });
+}
+
+/* ============================================================
+   §7 文件选择 → 压缩 → OCR
+   ============================================================ */
+
+function handleFileSelect(e) {
+  var f = e.target.files[0];
+  if (!f || !/^image\//.test(f.type)) return showToast('⚠ 请选图片');
+  editTargetId = null;
+  document.getElementById('saveBtn').textContent = '✅ 存入';
+  var r = new FileReader();
+  r.onload = function(ev) {
+    var img = new Image();
+    img.src = ev.target.result;
+    img.onload = function() {
+      currentImage = img;
+      showToast('📷 压缩中...');
+      compressImage(img).then(function(ci) {
+        compressedImage = ci;
+        hide('uploadZone'); show('scanResult');
+        document.getElementById('preview').innerHTML = '';
+        document.getElementById('preview').appendChild(img.cloneNode(true));
+        show('progress'); hide('editForm'); hide('ocrTextWrap');
+        document.getElementById('progressFill').style.width = '0%';
+        runOCR(img);
+      });
+    };
+  };
+  r.readAsDataURL(f);
+}
+
+/* ============================================================
+   §7.5 OCR主入口 — 三引擎调度
+   ============================================================ */
+
+function getOCREngine() {
+  // 用户选择优先
+  var sel = document.querySelector('input[name=ocrEngine]:checked');
+  if (sel) return sel.value;
+  // 自动判断：OCR.space > 百度 > Tesseract
+  return 'ocrspace';
+}
+
+function getOCRMode() {
+  var sel = document.querySelector('input[name=ocrMode]:checked');
+  return sel ? sel.value : 'full';  // 默认整图模式（裁剪模式坐标容易偏移）
+}
+
+function runOCR(img) {
+  if (ocrBusy) return;
+  ocrBusy = true;
+  dbgLogClear();
+  dbgLog('=== OCR流程开始 ===');
+
+  var engine = getOCREngine();
+  var engineHint = document.getElementById('ocrEngineHint');
+  dbgLog('引擎: ' + engine + ' | 模式: ' + getOCRMode());
+  dbgLog('图片尺寸: ' + (img.naturalWidth||img.width) + 'x' + (img.naturalHeight||img.height));
+
+  if (engine === 'ocrspace') {
+    engineHint.innerHTML = '🧠 使用 <span class="engine-name">OCR.space</span> 识别中...';
+    runOcrSpaceOCR(img);
+  } else if (engine === 'baidu') {
+    engineHint.innerHTML = '🧠 使用 <span class="engine-name">百度OCR</span> 识别中...';
+    runBaiduOCR(img);
+  } else {
+    engineHint.innerHTML = '🧠 使用 <span class="engine-name">Tesseract.js</span> 识别中（离线模式）...';
+    runTesseractOCR(img);
+  }
+}
+
+/* ---- OCR.space流程 ---- */
+function runOcrSpaceOCR(img) {
+  var mode = getOCRMode();
+  var chain;
+
+  if (mode === 'crop') {
+    chain = ocrSpaceCropRecognize(img, updateProgress).then(function(cropResults) {
+      var fields = mapCropResultsToFields(cropResults);
+      var fullText = Object.keys(cropResults).map(function(k) {
+        return '【' + k + '】\n' + cropResults[k];
+      }).join('\n\n');
+      return {text: fullText, fields: fields};
+    });
+  } else {
+    chain = ocrSpaceFullRecognize(img, updateProgress).then(function(text) {
+      return {text: text, fields: extractFields(text)};
+    });
+  }
+
+  chain.then(function(result) {
+    dbgLog('字段提取结果: ' + JSON.stringify(result.fields));
+    document.getElementById('ocrRawText').value = result.text;
+    show('ocrTextWrap');
+    fillForm(result.fields, 'f_');
+    updateProgress(100, '✅ 完成');
+    document.getElementById('ocrEngineHint').innerHTML = '✅ <span class="engine-name">OCR.space</span> 识别完成';
+    setTimeout(function() { hide('progress'); show('editForm');
+      document.getElementById('editForm').scrollIntoView({behavior:'smooth'}); }, 300);
+  }).catch(function(err) {
+    console.error('OCR.space失败:', err);
+    dbgLog('❌ OCR.space失败: ' + err.message);
+    // 网络失败时回退到Tesseract
+    if (err.message && (err.message.indexOf('Failed to fetch') >= 0 || err.message.indexOf('NetworkError') >= 0 || err.message.indexOf('network') >= 0)) {
+      showToast('⚠ OCR.space网络失败，尝试离线识别...');
+      document.getElementById('ocrEngineHint').innerHTML = '⚠ 网络失败，切换 <span class="engine-name">Tesseract.js</span>...';
+      ocrBusy = false;
+      runTesseractOCR(img);
+    } else {
+      hide('progress');
+      showToast('❌ OCR.space失败: ' + (err.message || '未知错误'));
+      document.getElementById('ocrEngineHint').innerHTML = '❌ 识别失败';
+    }
+  }).then(function() { ocrBusy = false; });
+}
+
+/* ---- 百度OCR流程 ---- */
+function runBaiduOCR(img) {
+  updateProgress(5, '获取百度Token...');
+
+  getBaiduToken().then(function(token) {
+    var mode = getOCRMode();
+    if (mode === 'crop') {
+      return baiduCropRecognize(img, token, updateProgress).then(function(cropResults) {
+        var fields = mapCropResultsToFields(cropResults);
+        var fullText = Object.keys(cropResults).map(function(k) {
+          return '【' + k + '】\n' + cropResults[k];
+        }).join('\n\n');
+        return {text: fullText, fields: fields};
+      });
+    } else {
+      return baiduFullRecognize(img, token, updateProgress).then(function(text) {
+        return {text: text, fields: extractFields(text)};
+      });
+    }
+  }).then(function(result) {
+    document.getElementById('ocrRawText').value = result.text;
+    show('ocrTextWrap');
+    fillForm(result.fields, 'f_');
+    updateProgress(100, '✅ 完成');
+    document.getElementById('ocrEngineHint').innerHTML = '✅ <span class="engine-name">百度OCR</span> 识别完成';
+    setTimeout(function() { hide('progress'); show('editForm');
+      document.getElementById('editForm').scrollIntoView({behavior:'smooth'}); }, 300);
+  }).catch(function(err) {
+    console.error('百度OCR失败:', err);
+    if (err.message && (err.message.indexOf('CORS') >= 0 || err.message.indexOf('Failed to fetch') >= 0 || err.message.indexOf('NetworkError') >= 0)) {
+      showToast('⚠ 百度OCR网络失败，尝试OCR.space...');
+      document.getElementById('ocrEngineHint').innerHTML = '⚠ 百度失败，切换 <span class="engine-name">OCR.space</span>...';
+      ocrBusy = false;
+      runOcrSpaceOCR(img);
+    } else {
+      hide('progress');
+      showToast('❌ 百度OCR失败: ' + (err.message || '未知错误'));
+      document.getElementById('ocrEngineHint').innerHTML = '❌ 百度OCR失败，请检查设置';
+    }
+  }).then(function() { ocrBusy = false; });
+}
+
+/* ---- Tesseract.js流程（离线后备） ---- */
+function runTesseractOCR(img) {
+  updateProgress(5, '加载Tesseract.js引擎...');
+
+  // 动态加载Tesseract.js
+  var doOCR = function() {
+    // 缩放到1600px以内 + 灰度增强
+    var c = document.createElement('canvas');
+    var pw = img.naturalWidth || img.width;
+    var ph = img.naturalHeight || img.height;
+    if (Math.max(pw, ph) > 1600) {
+      var rr = 1600 / Math.max(pw, ph);
+      pw = Math.round(pw * rr); ph = Math.round(ph * rr);
+    }
+    c.width = pw; c.height = ph;
+    var ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, pw, ph);
+    var id = ctx.getImageData(0, 0, pw, ph);
+    var d = id.data;
+    for (var i = 0; i < d.length; i += 4) {
+      var g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+      var v = Math.min(255, Math.max(0, (g - 128) * 1.3 + 128));
+      d[i] = d[i+1] = d[i+2] = v;
+    }
+    ctx.putImageData(id, 0, 0);
+    updateProgress(12, '加载中文引擎...');
+
+    Tesseract.createWorker('chi_sim', 1, {
+      logger: function(m) {
+        if (m.status === 'recognizing text')
+          updateProgress(20 + Math.round(m.progress * 70), '识别 ' + Math.round(m.progress * 100) + '%');
+        else if (m.status === 'loading language traineddata')
+          updateProgress(14, '下载语言包...');
+      },
+      errorHandler: function(err) { console.warn('Tesseract:', err); }
+    }).then(function(w) {
+      return w.setParameters({
+        tessedit_char_blacklist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+        preserve_interword_spaces: '1',
+        tessedit_pageseg_mode: '6'
+      }).then(function() {
+        updateProgress(20, '识别中...');
+        return w.recognize(c);
+      }).then(function(r) {
+        updateProgress(95, '提取字段...');
+        return w.terminate().then(function() { return r; });
+      });
+    }).then(function(r) {
+      var text = r.data.text;
+      document.getElementById('ocrRawText').value = text;
+      show('ocrTextWrap');
+      fillForm(extractFields(text), 'f_');
+      updateProgress(100, '✅ 完成');
+      document.getElementById('ocrEngineHint').innerHTML = '✅ <span class="engine-name">Tesseract.js</span> 识别完成（离线模式）';
+      setTimeout(function() { hide('progress'); show('editForm');
+        document.getElementById('editForm').scrollIntoView({behavior:'smooth'}); }, 300);
+    }).catch(function(err) {
+      console.error(err); hide('progress');
+      showToast('❌ 识别失败: ' + (err.message || '未知'));
+    }).then(function() { ocrBusy = false; });
+  };
+
+  if (typeof Tesseract !== 'undefined') {
+    doOCR();
+  } else {
+    // 动态加载Tesseract.js
+    updateProgress(2, '下载Tesseract.js引擎...');
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.onload = function() { tesseractLoaded = true; doOCR(); };
+    script.onerror = function() {
+      hide('progress'); ocrBusy = false;
+      showToast('❌ Tesseract.js加载失败，请联网或配置百度OCR');
+    };
+    document.head.appendChild(script);
+  }
+}
+
+function reparseOCR() {
+  var t = document.getElementById('ocrRawText').value;
+  if (!t.trim()) return showToast('⚠ 空');
+  fillForm(extractFields(t), 'f_');
+  showToast('🔄 已重新解析');
+}
+
+/* ============================================================
+   §8 字段提取引擎（文本解析 — 整图模式/粘贴模式用）
+   ============================================================ */
+
+function extractFields(raw) {
+  var t = cleanOcrText(raw);
+  // 关键：保留换行结构用于字段边界定位，另存一份合并版用于正则匹配
+  var tClean = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  var tFlat = tClean.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  return {
+    id:       extractId(tFlat),
+    urgency:  extractUrgency(tFlat),
+    sender:   extractSender(tFlat),
+    docnum:   extractDocNum(tFlat),
+    regdate:  extractRegDate(tFlat),
+    deadline: extractDeadline(tFlat),
+    title:    extractTitle2(tClean),
+    opinion:  extractOpinion2(tClean),
+    leader:   extractLeader2(tClean),
+    handler:  extractHandler2(tClean)
+  };
+}
+
+/* ---- 8.1 文本清理 ---- */
+function cleanOcrText(t) {
+  t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // 去除行内多余空格，但保留换行结构！
+  t = t.replace(/[ \t]+/g, ' ');
+  // 去除汉字间空格
+  var p = '';
+  while (p !== t) { p = t; t = t.replace(/([\u4e00-\u9fa5])\s+([\u4e00-\u9fa5])/g, '$1$2'); }
+  // 去除标点与汉字间空格
+  t = t.replace(/([\u4e00-\u9fa5])\s+([【】（）()、，。：:；;！!？?])/g, '$1$2');
+  t = t.replace(/([【】（）()、，。：:；;！!？?])\s+([\u4e00-\u9fa5])/g, '$1$2');
+  // 数字间空格合并
+  t = t.replace(/(\d)\s+(\d)/g, '$1$2');
+  // 去除短英文残片
+  t = t.replace(/\b[A-Za-z]{1,3}\b/g, '');
+  p = '';
+  while (p !== t) { p = t; t = t.replace(/([\u4e00-\u9fa5])\s*[A-Za-z]{1,3}\s*([\u4e00-\u9fa5])/g, '$1$2'); }
+  t = t.replace(/^[A-Za-z'\s]+$/gm, '');
+  t = t.replace(/[=+]{3,}/g, ' ');
+  t = t.replace(/\|/g, ' ');
+  t = t.replace(/[ \t]+/g, ' ');
+  t = t.replace(/\n\s*\n/g, '\n');
+  // ★ 不合并单换行！保留换行结构用于字段边界定位
+  return t.trim();
+}
+
+/* ---- 8.2 逐字段提取 ---- */
+function extractId(t) { var m = t.match(/编号[：:\s]*(\d+)/); return m ? m[1] : ''; }
+function extractUrgency(t) { var m = t.match(/紧急程度[：:\s]*(一般|紧急|重要|急件|特急)/); return m ? m[1] : ''; }
+function extractSender(t) {
+  var m = t.match(/来文单位[：:\s]*([\u4e00-\u9fa5]{2,30}?)(?:\s|来文字号|登记日期|办理时限|文件标题|拟办|领导|承办|$)/);
+  return m ? m[1] : '';
+}
+
+function extractDocNum(t) {
+  var m = t.match(/来文字号[：:\s]*([\u4e00-\u9fa50-9【\]〔〕\[\(\(（\)\)第号]+?)(?:\s{2,}|[=＝]|登记日期|办理时限|文件标题|拟办|领导|承办|$)/);
+  if (m) { var v = m[1].replace(/[=＝\s]+$/, '').trim(); if (v && !/^[函通知\s=＝]+$/.test(v)) return v; }
+  m = t.match(/来文字号[：:\s]*(通知|函|电话通知单?|电话记录|便函|传真|邮件)(?:\s|$|[=＝])/);
+  return m ? m[1] : '';
+}
+
+function extractRegDate(t) {
+  // 先尝试标准格式
+  var m = t.match(/登记日期[：:\s]*(\d{4})[-/年·.](\d{1,2})[-/月·.](\d{1,2})/);
+  if (!m) m = t.match(/登记日期[：:\s=|]*[^0-9]{0,5}(\d{4})[-/年·.](\d{1,2})[-/月·.](\d{1,2})/);
+  // OCR常见错误：把"-"识别成"一"或"·"
+  if (!m) { var i = t.indexOf('登记日期');
+    if (i >= 0) { var n = t.substring(i, i + 50); var dm = n.match(/(\d{4})[-/年·.一](\d{1,2})[-/月·.一](\d{1,2})/);
+      if (dm) return dm[1] + '-' + pad2(dm[2]) + '-' + pad2(dm[3]); } }
+  return m ? m[1] + '-' + pad2(m[2]) + '-' + pad2(m[3]) : '';
+}
+
+function extractDeadline(t) {
+  var m = t.match(/办理时限[：:\s]*(\d{4})[-/年·.](\d{1,2})[-/月·.](\d{1,2})/);
+  if (!m) m = t.match(/办理时限[：:\s=|]*[^0-9]{0,5}(\d{4})[-/年·.](\d{1,2})[-/月·.](\d{1,2})/);
+  if (!m) { var i = t.indexOf('办理时限');
+    if (i >= 0) { var n = t.substring(i, i + 50); var dm = n.match(/(\d{4})[-/年·.一](\d{1,2})[-/月·.一](\d{1,2})/);
+      if (dm) return dm[1] + '-' + pad2(dm[2]) + '-' + pad2(dm[3]); } }
+  return m ? m[1] + '-' + pad2(m[2]) + '-' + pad2(m[3]) : '';
+}
+
+function extractTitle(t) {
+  var kwds = ['文件标题', '文*标题', '*件标题', '**标题', '文件*题', '文件标*'];
+  var ti = -1, kl = 0;
+  for (var i = 0; i < kwds.length; i++) {
+    var re = new RegExp(kwds[i].replace(/\*/g, '.{0,1}')); var um = t.match(re);
+    if (um) { ti = um.index; kl = um[0].length; break; }
+  }
+  var docTypes = ['通知','意见','函','请示','报告','决定','批复','纪要','方案','办法','规定','条例','细则','公告','通告','通报','决议','命令','批示','答复'];
+  if (ti >= 0) {
+    var sub = t.substring(ti + kl).replace(/^[：:\s|]+/, '');
+    var matches = [];
+    for (var j = 0; j < docTypes.length; j++) {
+      var dt = docTypes[j];
+      var pos = 0;
+      while (true) {
+        var idx = sub.indexOf(dt, pos);
+        if (idx < 0) break;
+        var before = sub.substring(Math.max(0, idx - 10), idx);
+        var after = sub.substring(idx + dt.length, idx + dt.length + 6);
+        var isFieldName = false;
+        if (dt === '批示' && before.indexOf('领导') >= 0) isFieldName = true;
+        if (dt === '意见' && before.indexOf('拟办') >= 0) isFieldName = true;
+        if (dt === '通知' && /^[单书表]/.test(after)) isFieldName = true;
+        if (dt === '函' && /[复回]/.test(before)) isFieldName = true;
+        if (!isFieldName) matches.push({s: idx, e: idx + dt.length});
+        pos = idx + 1;
+      }
+    }
+    matches.sort(function(a,b) { return a.s - b.s; });
+    var tr;
+    if (matches.length > 0) { tr = sub.substring(0, matches[matches.length - 1].e); }
+    else {
+      var stoppers = ['拟办意见','领导批示','承办','拟办','批示']; var ep = sub.length;
+      for (var k = 0; k < stoppers.length; k++) { var pp = sub.indexOf(stoppers[k]); if (pp > 0 && pp < ep) ep = pp; }
+      tr = sub.substring(0, ep);
+    }
+    tr = tr.replace(/\s+/g, ' ').trim().replace(/^[|：:\s]+/, '').replace(/[|：:\s]+$/, '');
+    if (tr.length >= 4) return tr;
+  }
+  var m2 = t.match(/(关于[\u4e00-\u9fa50-9，、。的工作通知函请示报告意见决定纪要方案办法规定条例细则答复]+?(?:的[函通知请示报告决定意见方案办法规定答复]+|$))/);
+  if (m2) return m2[1];
+  var m3 = t.match(/文件标题[：:\s]*([\u4e00-\u9fa5【\]〔〕\[\(\(（\)\)0-9、，。！!？?]+?)(?:\s{2,}|[=＝]{2,}|拟办|领导|承办|$)/);
+  if (m3) return m3[1].trim();
+  return '';
+}
+
+function extractOpinion(t) { var m = t.match(/拟办意见[：:\s]*([\s\S]+?)(?=领导批示|承办|$)/); return m ? m[1].replace(/[\n\s]+/g, ' ').trim().substring(0, 200) : ''; }
+function extractLeader(t) { var m = t.match(/领导批示[：:\s]*([\s\S]+?)(?=承办|$)/); return m ? m[1].replace(/[\n\s]+/g, ' ').trim().substring(0, 300) : ''; }
+
+/* ---- 8.3 基于indexOf+换行的字段提取（用于OCR.space整图模式） ---- */
+// OCR可能把"文件标题"错认为"交件标题"等，用indexOf定位更可靠
+
+function extractTitle2(t) {
+  // 策略1：indexOf找"文件标题"关键字，截取到下一个字段关键字
+  var kwds = ['文件标题', '文件标题目', '文作标题', '交件标题'];
+  var titleStart = -1, kwdLen = 0;
+  for (var i = 0; i < kwds.length; i++) {
+    var idx = t.indexOf(kwds[i]);
+    if (idx >= 0) { titleStart = idx; kwdLen = kwds[i].length; break; }
+  }
+  if (titleStart < 0) {
+    // 策略2：找"关于"开头（公文标题几乎都以"关于"开头）
+    var m = t.match(/关于[\u4e00-\u9fa50-9，、。的工作通知函请示报告意见决定纪要方案办法规定条例细则答复]+?(?:的[函通知请示报告决定意见方案办法规定答复]+|$)/);
+    if (m) return m[0].replace(/\s+/g, ' ').trim();
+    // 策略3：用原正则
+    return extractTitle(t.replace(/\n/g, ' '));
+  }
+  var sub = t.substring(titleStart + kwdLen).replace(/^[：:\s|]+/, '');
+  // 截取到下一个字段关键字
+  var stoppers = ['拟办意见', '拟办', '领导批示', '承办', '备注'];
+  var endPos = sub.length;
+  for (var j = 0; j < stoppers.length; j++) {
+    var sp = sub.indexOf(stoppers[j]);
+    if (sp > 0 && sp < endPos) endPos = sp;
+  }
+  var title = sub.substring(0, endPos).replace(/\s+/g, ' ').trim();
+  if (title.length >= 4) return title;
+  return '';
+}
+
+function extractOpinion2(t) {
+  var kwds = ['拟办意见', '拟办意', '拟办'];
+  var start = -1, kwdLen = 0;
+  for (var i = 0; i < kwds.length; i++) {
+    var idx = t.indexOf(kwds[i]);
+    if (idx >= 0) { start = idx; kwdLen = kwds[i].length; break; }
+  }
+  if (start < 0) return '';
+  var sub = t.substring(start + kwdLen).replace(/^[：:\s|]+/, '');
+  // 截取到"领导批示"或"承办"
+  var stoppers = ['领导批示', '批示', '承办'];
+  var endPos = sub.length;
+  for (var j = 0; j < stoppers.length; j++) {
+    var sp = sub.indexOf(stoppers[j]);
+    if (sp > 0 && sp < endPos) endPos = sp;
+  }
+  return sub.substring(0, endPos).replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+}
+
+function extractLeader2(t) {
+  var kwds = ['领导批示', '批示'];
+  var start = -1, kwdLen = 0;
+  for (var i = 0; i < kwds.length; i++) {
+    var idx = t.indexOf(kwds[i]);
+    if (idx >= 0) { start = idx; kwdLen = kwds[i].length; break; }
+  }
+  if (start < 0) return '';
+  var sub = t.substring(start + kwdLen).replace(/^[：:\s|]+/, '');
+  // 截取到"承办"或"备注"
+  var stoppers = ['承办', '备注'];
+  var endPos = sub.length;
+  for (var j = 0; j < stoppers.length; j++) {
+    var sp = sub.indexOf(stoppers[j]);
+    if (sp > 0 && sp < endPos) endPos = sp;
+  }
+  return sub.substring(0, endPos).replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 300);
+}
+
+function extractHandler2(t) {
+  var idx = t.indexOf('承办');
+  if (idx < 0) return '';
+  var sub = t.substring(idx + 2).replace(/^[：:\s|]+/, '');
+  // 截取到"备注"或结尾
+  var stoppers = ['备注'];
+  var endPos = sub.length;
+  for (var j = 0; j < stoppers.length; j++) {
+    var sp = sub.indexOf(stoppers[j]);
+    if (sp > 0 && sp < endPos) endPos = sp;
+  }
+  return sub.substring(0, endPos).replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+}
+function extractHandler(t) { var m = t.match(/承办[：:\s]*([\s\S]+)/); return m ? m[1].replace(/[\n\s]+/g, ' ').trim().substring(0, 200) : ''; }
+
+function pad2(s) { return String(s).padStart ? String(s).padStart(2, '0') : ('0' + s).slice(-2); }
+
+function parseDate(s) {
+  var ps = [/(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})[日]?/, /(\d{4})(\d{2})(\d{2})/];
+  for (var i = 0; i < ps.length; i++) { var m = s.match(ps[i]); if (m) return m[1] + '-' + pad2(m[2]) + '-' + pad2(m[3]); }
+  return s;
+}
+
+/* ============================================================
+   §9 表单工具
+   ============================================================ */
+
+function getFieldValue(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function fillForm(f, pre) {
+  var map = {};
+  map[pre+'id']=f.id; map[pre+'urgency']=f.urgency; map[pre+'sender']=f.sender; map[pre+'docnum']=f.docnum;
+  map[pre+'regdate']=f.regdate; map[pre+'deadline']=f.deadline; map[pre+'title']=f.title;
+  map[pre+'opinion']=f.opinion; map[pre+'leader']=f.leader; map[pre+'handler']=f.handler;
+  Object.keys(map).forEach(function(k) { var el = document.getElementById(k); if (el) el.value = map[k] || ''; });
+  clearValidation(pre);
+}
+
+function clearFields(pre) {
+  ['id','urgency','sender','docnum','regdate','deadline','title','opinion','leader','handler'].forEach(function(k) {
+    var el = document.getElementById(pre + k); if (el) el.value = '';
+  });
+  clearValidation(pre);
+}
+
+function clearValidation(pre) {
+  ['regdate','deadline'].forEach(function(k) {
+    var h = document.getElementById((pre === 'f_' ? 'vh_f_' : 'vh_p_') + k);
+    if (h) { h.classList.remove('show'); h.textContent = ''; }
+    var inp = document.getElementById(pre + k); if (inp) inp.classList.remove('invalid');
+  });
+}
+
+function validateDates(reg, dl, pre) {
+  if (reg && dl && dl < reg) {
+    document.getElementById(pre + 'deadline').classList.add('invalid');
+    var h = document.getElementById((pre === 'f_' ? 'vh_f_' : 'vh_p_') + 'deadline');
+    if (h) { h.textContent = '⚠ 办理时限不应早于登记日期'; h.classList.add('show'); }
+    return false;
+  }
+  return true;
+}
+
+function readForm(pre) {
+  return {
+    number: getFieldValue(pre+'id'), urgency: getFieldValue(pre+'urgency'),
+    sender: getFieldValue(pre+'sender'), docnum: getFieldValue(pre+'docnum'),
+    regdate: getFieldValue(pre+'regdate'), deadline: getFieldValue(pre+'deadline'),
+    title: getFieldValue(pre+'title'), opinion: getFieldValue(pre+'opinion'),
+    leader: getFieldValue(pre+'leader'), handler: getFieldValue(pre+'handler')
+  };
+}
+
+/* ============================================================
+   §10 拍照模式 — 保存与重置
+   ============================================================ */
+
+function saveEntry() {
+  var d = readForm('f_');
+  if (!d.number && !d.title) return showToast('⚠ 请至少填写编号或标题');
+  if (!validateDates(d.regdate, d.deadline, 'f_')) return;
+
+  var isEdit = !!editTargetId;
+  var eid = isEdit ? editTargetId : Date.now().toString();
+  var wantThumb = document.getElementById('saveThumbnail') ? document.getElementById('saveThumbnail').checked : true;
+
+  var entry = {
+    id: eid, number: d.number, urgency: d.urgency, sender: d.sender, docnum: d.docnum,
+    regdate: d.regdate, deadline: d.deadline, title: d.title,
+    opinion: d.opinion, leader: d.leader, handler: d.handler,
+    hasImage: wantThumb && !!compressedImage,
+    createdAt: isEdit ? (getEntries().find(function(e) { return e.id === eid; }) || {}).createdAt || new Date().toISOString() : new Date().toISOString(),
+    updatedAt: isEdit ? new Date().toISOString() : undefined
+  };
+
+  var p = Promise.resolve();
+  if (wantThumb && compressedImage) {
+    p = saveImage(eid, compressedImage).catch(function(err) {
+      console.error(err); entry.hasImage = false;
+      showToast('⚠ 图片存储失败，已保存文字');
+    });
+  }
+  p.then(function() {
+    var list = getEntries();
+    if (isEdit) {
+      var idx = list.findIndex(function(e) { return e.id === eid; });
+      if (idx >= 0) list[idx] = entry; else list.unshift(entry);
+      showToast('✅ 修改已保存');
+    } else {
+      list.unshift(entry); showToast('✅ 已存入');
+    }
+    saveEntries(list); resetScanForm(); renderList();
+  });
+}
+
+function resetScanForm() {
+  currentImage = null; compressedImage = null; editTargetId = null;
+  document.getElementById('fileInput').value = '';
+  show('uploadZone'); hide('scanResult'); hide('ocrTextWrap');
+  document.getElementById('preview').innerHTML = '';
+  document.getElementById('saveBtn').textContent = '✅ 存入';
+  document.getElementById('ocrEngineHint').innerHTML = '';
+  clearFields('f_');
+}
+
+/* ============================================================
+   §11 粘贴模式
+   ============================================================ */
+
+function parsePastedText() {
+  var t = document.getElementById('pasteText').value;
+  if (!t.trim()) return showToast('⚠ 请粘贴');
+  fillForm(extractFields(t), 'p_');
+  var pf = document.getElementById('pasteForm');
+  pf.style.display = 'block'; pf.scrollIntoView({behavior:'smooth'});
+}
+
+function savePastedEntry() {
+  var d = readForm('p_');
+  if (!d.number && !d.title) return showToast('⚠ 请填编号或标题');
+  if (!validateDates(d.regdate, d.deadline, 'p_')) return;
+  var list = getEntries();
+  list.unshift({
+    id: Date.now().toString(), number: d.number, urgency: d.urgency,
+    sender: d.sender, docnum: d.docnum, regdate: d.regdate, deadline: d.deadline,
+    title: d.title, opinion: d.opinion, leader: d.leader, handler: d.handler,
+    hasImage: false, createdAt: new Date().toISOString()
+  });
+  saveEntries(list); showToast('✅ 已存入（无图片）');
+  document.getElementById('pasteText').value = '';
+  document.getElementById('pasteForm').style.display = 'none';
+  clearFields('p_');
+}
+
+/* ============================================================
+   §12 删除 — 支持撤销
+   ============================================================ */
+
+function deleteEntry(id) {
+  cancelPendingDelete();
+  var list = getEntries();
+  var entry = list.find(function(e) { return e.id === id; });
+  if (!entry) return;
+  var remaining = list.filter(function(e) { return e.id !== id; });
+  saveEntries(remaining); renderList();
+
+  var toastEl = document.getElementById('toast');
+  toastEl.classList.remove('show'); toastEl.classList.add('interactive');
+  toastEl.innerHTML = '已删除「' + escapeHtml(entry.number || entry.title || id) + '」 <span class="toast-action" onclick="undoDelete()">↩ 撤销</span>';
+  toastEl.classList.add('show');
+
+  pendingDelete = { id: id, entry: entry, timer: setTimeout(function() { confirmDelete(id); pendingDelete = null; resetToastStyle(); }, UNDO_MS) };
+}
+
+function cancelPendingDelete() {
+  if (pendingDelete) { clearTimeout(pendingDelete.timer); pendingDelete = null; }
+}
+
+function confirmDelete(id) {
+  deleteImage(id).catch(function() {});
+}
+
+function undoDelete() {
+  if (!pendingDelete) return;
+  var entry = pendingDelete.entry;
+  clearTimeout(pendingDelete.timer); pendingDelete = null;
+  var list = getEntries();
+  list.push(entry);
+  list.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+  saveEntries(list); renderList();
+  showToast('✅ 已撤销删除'); resetToastStyle();
+}
+
+function resetToastStyle() {
+  var el = document.getElementById('toast');
+  el.classList.remove('show', 'interactive'); el.innerHTML = '';
+  if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+}
+
+/* ============================================================
+   §13 列表渲染 + 搜索过滤
+   ============================================================ */
+
+function getDeadlineStatus(d) {
+  if (!d) return { cls: '', tc: '', label: '' };
+  var now = new Date(); now.setHours(0, 0, 0, 0);
+  var t = new Date(d + 'T00:00:00');
+  var diff = Math.ceil((t - now) / 86400000);
+  if (diff < 0)  return { cls: 'deadline-overdue', tc: 'tag-overdue', label: '⚠ 过期' + Math.abs(diff) + '天' };
+  if (diff === 0) return { cls: 'deadline-overdue', tc: 'tag-overdue', label: '⚠ 今天截止' };
+  if (diff <= 3)  return { cls: 'deadline-urgent',  tc: 'tag-urgent',  label: '⏰ 剩' + diff + '天' };
+  return { cls: 'deadline-ok', tc: 'tag-ok', label: '剩' + diff + '天' };
+}
+
+function escapeHtml(s) {
+  var d = document.createElement('div'); d.textContent = (s || '').toString(); return d.innerHTML;
+}
+
+function renderList() {
+  var allEntries = getEntries();
+  var q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+  var filtered = allEntries;
+  if (q) {
+    filtered = allEntries.filter(function(e) {
+      return (e.number && e.number.toLowerCase().indexOf(q) >= 0) ||
+        (e.title && e.title.toLowerCase().indexOf(q) >= 0) ||
+        (e.sender && e.sender.toLowerCase().indexOf(q) >= 0) ||
+        (e.docnum && e.docnum.toLowerCase().indexOf(q) >= 0);
+    });
+  }
+
+  var listEl = document.getElementById('entryList');
+  var emptyEl = document.getElementById('emptyState');
+  document.getElementById('entryCount').textContent = filtered.length;
+  var hasData = filtered.length > 0;
+  document.getElementById('exportBtn').disabled = !hasData;
+  document.getElementById('csvBtn').disabled = !hasData;
+
+  if (!hasData) {
+    listEl.innerHTML = ''; emptyEl.style.display = 'block'; return;
+  }
+  emptyEl.style.display = 'none';
+
+  var html = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var e = filtered[i];
+    var dl = getDeadlineStatus(e.deadline);
+    html += '<div class="entry-card ' + dl.cls + '" onclick="viewEntry(\'' + e.id + '\')">' +
+      '<div class="top"><div class="top-row">' +
+      (e.hasImage ? '<img class="thumb" id="th_' + e.id + '" src="" style="background:#eee">' : '') +
+      '<div><span class="doc-id">📌' + escapeHtml(e.number || '—') + '</span>' +
+      (e.urgency ? '<span class="urgency urgency-' + escapeHtml(e.urgency) + '">' + escapeHtml(e.urgency) + '</span>' : '') +
+      ' ' + (e.hasImage ? '📷' : '') + '</div></div>' +
+      '<button class="del-btn" onclick="event.stopPropagation();deleteEntry(\'' + e.id + '\')">删</button></div>' +
+      '<div class="body"><div class="title">' + escapeHtml(e.title || '无标题') + '</div>' +
+      '<div class="meta">' + (e.sender ? '<span>📨' + escapeHtml(e.sender) + '</span>' : '') +
+      (e.regdate ? '<span>📅' + escapeHtml(e.regdate) + '</span>' : '') +
+      (e.deadline ? '<span>⏰' + escapeHtml(e.deadline) + '</span>' : '') + '</div>' +
+      (dl.label ? '<span class="deadline-tag ' + dl.tc + '">' + dl.label + '</span>' : '') +
+      '</div></div>';
+  }
+  listEl.innerHTML = html;
+
+  var imgLoads = [];
+  for (var j = 0; j < filtered.length; j++) {
+    if (filtered[j].hasImage) {
+      (function(e) {
+        imgLoads.push(
+          getImage(e.id).then(function(d) {
+            var el = document.getElementById('th_' + e.id);
+            if (el) { if (d) el.src = d; else el.style.display = 'none'; }
+          }).catch(function() {
+            var el2 = document.getElementById('th_' + e.id);
+            if (el2) el2.style.display = 'none';
+          })
+        );
+      })(filtered[j]);
+    }
+  }
+  Promise.all(imgLoads).catch(function() {});
+}
+
+/* ============================================================
+   §14 详情弹窗 + 编辑
+   ============================================================ */
+
+function viewEntry(id) {
+  var list = getEntries();
+  var entry = list.find(function(e) { return e.id === id; });
+  if (!entry) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  getImage(id).then(function(imgData) {
+    var imgHtml = '';
+    if (imgData) imgHtml = '<div class="detail-img"><img src="' + imgData + '"></div>';
+
+    overlay.innerHTML =
+      '<div class="modal-panel" onclick="event.stopPropagation()">' +
+      '<div class="modal-title">📄 文件详情' + (entry.hasImage ? ' (含原件)' : '') + '</div>' +
+      imgHtml +
+      '<div class="detail-row">' +
+      '<b>编号：</b>' + escapeHtml(entry.number || '—') + '<br>' +
+      '<b>紧急：</b>' + escapeHtml(entry.urgency || '—') + '<br>' +
+      '<b>来文单位：</b>' + escapeHtml(entry.sender || '—') + '<br>' +
+      '<b>文号：</b>' + escapeHtml(entry.docnum || '—') + '<br>' +
+      '<b>登记：</b>' + escapeHtml(entry.regdate || '—') + '<br>' +
+      '<b>时限：</b>' + escapeHtml(entry.deadline || '—') + '<br>' +
+      '<b>标题：</b>' + escapeHtml(entry.title || '—') + '<br>' +
+      '<b>拟办：</b>' + escapeHtml(entry.opinion || '—') + '<br>' +
+      '<b>批示：</b>' + escapeHtml(entry.leader || '—') + '<br>' +
+      '<b>承办：</b>' + escapeHtml(entry.handler || '—') + '<br>' +
+      (entry.createdAt ? '<b>录入时间：</b>' + new Date(entry.createdAt).toLocaleString() + '<br>' : '') +
+      (entry.updatedAt ? '<b>最近修改：</b>' + new Date(entry.updatedAt).toLocaleString() : '') +
+      '</div>' +
+      '<div class="modal-btns">' +
+      '<button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button>' +
+      '<button class="btn btn-primary" onclick="editEntryInModal(this)">✏️ 编辑</button>' +
+      '</div></div>';
+
+    document.body.appendChild(overlay);
+  }).catch(function() {
+    overlay.innerHTML =
+      '<div class="modal-panel" onclick="event.stopPropagation()">' +
+      '<div class="modal-title">📄 文件详情</div>' +
+      '<div class="detail-row">' +
+      '<b>编号：</b>' + escapeHtml(entry.number || '—') + '<br>' +
+      '<b>紧急：</b>' + escapeHtml(entry.urgency || '—') + '<br>' +
+      '<b>来文单位：</b>' + escapeHtml(entry.sender || '—') + '<br>' +
+      '<b>文号：</b>' + escapeHtml(entry.docnum || '—') + '<br>' +
+      '<b>登记：</b>' + escapeHtml(entry.regdate || '—') + '<br>' +
+      '<b>时限：</b>' + escapeHtml(entry.deadline || '—') + '<br>' +
+      '<b>标题：</b>' + escapeHtml(entry.title || '—') + '<br>' +
+      '<b>拟办：</b>' + escapeHtml(entry.opinion || '—') + '<br>' +
+      '<b>批示：</b>' + escapeHtml(entry.leader || '—') + '<br>' +
+      '<b>承办：</b>' + escapeHtml(entry.handler || '—') + '</div>' +
+      '<div class="modal-btns"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button>' +
+      '<button class="btn btn-primary" onclick="editEntryInModal(this)">✏️ 编辑</button>' +
+      '</div></div>';
+    document.body.appendChild(overlay);
+  });
+}
+
+function editEntryInModal(btn) {
+  var panel = btn.closest('.modal-panel');
+  var overlay = btn.closest('.modal-overlay');
+  var rows = panel.querySelectorAll('.detail-row');
+  if (!rows.length) return;
+  var vals = {};
+  var labels = panel.querySelectorAll('.detail-row b');
+  labels.forEach(function(b) {
+    var key = b.textContent.replace(/[：:]/g, '').trim();
+    var val = '';
+    var next = b.nextSibling;
+    while (next && next.nodeType === 3) { val += next.textContent; next = next.nextSibling; }
+    if (next && next.tagName === 'BR') next = next.nextSibling;
+    vals[key] = val.replace(/[\n\r]/g, '').trim();
+  });
+
+  var entryId = '';
+  var list = getEntries();
+  var matched = list.find(function(e) {
+    return e.number === (vals['编号'] === '—' ? '' : vals['编号']);
+  });
+  if (matched) entryId = matched.id;
+
+  var existingImg = panel.querySelector('.detail-img img');
+  var imgHtml = '';
+  if (existingImg) imgHtml = '<div class="edit-img-preview"><img src="' + existingImg.src + '"></div>';
+
+  panel.innerHTML =
+    '<div class="modal-title">✏️ 编辑记录</div>' + imgHtml +
+    '<div class="fields-grid">' +
+    '<div class="field-group"><label>编号</label><input id="em_id" value="' + escapeHtml(vals['编号'] === '—' ? '' : vals['编号'] || '') + '"></div>' +
+    '<div class="field-group"><label>紧急程度</label>' +
+    '<select id="em_urgency"><option value="">—</option>' +
+    '<option value="一般"' + (vals['紧急'] === '一般' ? ' selected' : '') + '>一般</option>' +
+    '<option value="急件"' + (vals['紧急'] === '急件' ? ' selected' : '') + '>急件</option>' +
+    '<option value="特急"' + (vals['紧急'] === '特急' ? ' selected' : '') + '>特急</option></select></div>' +
+    '<div class="field-group"><label>来文单位</label><input id="em_sender" value="' + escapeHtml(vals['来文单位'] === '—' ? '' : vals['来文单位'] || '') + '"></div>' +
+    '<div class="field-group"><label>来文字号</label><input id="em_docnum" value="' + escapeHtml(vals['文号'] === '—' ? '' : vals['文号'] || '') + '"></div>' +
+    '<div class="field-group"><label>登记日期</label><input id="em_regdate" type="date" value="' + escapeHtml(vals['登记'] === '—' ? '' : vals['登记'] || '') + '"></div>' +
+    '<div class="field-group"><label>办理时限</label><input id="em_deadline" type="date" value="' + escapeHtml(vals['时限'] === '—' ? '' : vals['时限'] || '') + '"></div>' +
+    '<div class="field-group full"><label>文件标题</label><input id="em_title" value="' + escapeHtml(vals['标题'] === '—' ? '' : vals['标题'] || '') + '"></div>' +
+    '<div class="field-group full"><label>拟办意见</label><textarea id="em_opinion" rows="2">' + escapeHtml(vals['拟办'] === '—' ? '' : vals['拟办'] || '') + '</textarea></div>' +
+    '<div class="field-group full"><label>领导批示</label><textarea id="em_leader" rows="2">' + escapeHtml(vals['批示'] === '—' ? '' : vals['批示'] || '') + '</textarea></div>' +
+    '<div class="field-group full"><label>承办</label><textarea id="em_handler" rows="1">' + escapeHtml(vals['承办'] === '—' ? '' : vals['承办'] || '') + '</textarea></div>' +
+    '</div>' +
+    '<div class="modal-btns">' +
+    '<button class="btn btn-outline" onclick="viewEntry(\'' + entryId + '\');this.closest(\'.modal-overlay\').remove()">取消</button>' +
+    '<button class="btn btn-primary" onclick="saveEditInModal(this,\'' + entryId + '\')">💾 保存修改</button>' +
+    '</div>';
+}
+
+function saveEditInModal(btn, entryId) {
+  var panel = btn.closest('.modal-panel');
+  var overlay = panel.closest('.modal-overlay');
+  var d = {
+    number:  (document.getElementById('em_id') || {}).value || '',
+    urgency: (document.getElementById('em_urgency') || {}).value || '',
+    sender:  (document.getElementById('em_sender') || {}).value || '',
+    docnum:  (document.getElementById('em_docnum') || {}).value || '',
+    regdate: (document.getElementById('em_regdate') || {}).value || '',
+    deadline:(document.getElementById('em_deadline') || {}).value || '',
+    title:   (document.getElementById('em_title') || {}).value || '',
+    opinion: (document.getElementById('em_opinion') || {}).value || '',
+    leader:  (document.getElementById('em_leader') || {}).value || '',
+    handler: (document.getElementById('em_handler') || {}).value || ''
+  };
+
+  if (!d.number && !d.title) return showToast('⚠ 请至少填写编号或标题');
+  if (d.regdate && d.deadline && d.deadline < d.regdate) {
+    return showToast('⚠ 办理时限不应早于登记日期');
+  }
+
+  var list = getEntries();
+  var idx = list.findIndex(function(e) { return e.id === entryId; });
+  if (idx < 0) return showToast('❌ 条目不存在');
+
+  list[idx].number = d.number; list[idx].urgency = d.urgency;
+  list[idx].sender = d.sender; list[idx].docnum = d.docnum;
+  list[idx].regdate = d.regdate; list[idx].deadline = d.deadline;
+  list[idx].title = d.title; list[idx].opinion = d.opinion;
+  list[idx].leader = d.leader; list[idx].handler = d.handler;
+  list[idx].updatedAt = new Date().toISOString();
+
+  saveEntries(list); overlay.remove();
+  showToast('✅ 修改已保存'); renderList();
+}
+
+/* ============================================================
+   §15 导出 Excel
+   ============================================================ */
+
+function exportExcel() {
+  var entries = getEntries();
+  if (!entries.length) return showToast('⚠ 无记录');
+  var withZip = document.getElementById('exportBackupZip').checked;
+  var hasImgs = entries.some(function(e) { return e.hasImage; });
+  showToast('⏳ 生成中...');
+  try {
+    if (hasImgs) exportWithImages(entries, withZip);
+    else exportSimple(entries, withZip);
+  } catch (err) { console.error(err); showToast('❌ ' + err.message); }
+}
+
+function exportSimple(entries, withZip) {
+  var data = entries.map(function(e, i) {
+    return {
+      '序号': i + 1, '编号': e.number || '', '紧急程度': e.urgency || '',
+      '来文单位': e.sender || '', '文号': e.docnum || '',
+      '登记日期': e.regdate || '', '办理时限': e.deadline || '',
+      '标题': e.title || '', '拟办意见': e.opinion || '',
+      '领导批示': e.leader || '', '承办': e.handler || ''
+    };
+  });
+  var ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:6},{wch:10},{wch:8},{wch:16},{wch:26},{wch:12},{wch:12},{wch:40},{wch:30},{wch:36},{wch:24}];
+  var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '收文登记');
+  XLSX.writeFile(wb, '公文收文_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  showToast('✅ Excel 已导出');
+}
+
+function exportWithImages(entries, withZip) {
+  var wb = new ExcelJS.Workbook();
+  var ws = wb.addWorksheet('收文登记');
+  var cols = ['序号','编号','紧急程度','来文单位','文号','登记日期','办理时限','标题','拟办意见','领导批示','承办','📷原件'];
+  ws.columns = cols.map(function(c, i) {
+    return {header: c, width: i === 11 ? 18 : i === 7 ? 40 : i === 8 || i === 9 ? 30 : i === 10 ? 24 : i === 4 ? 26 : i === 3 ? 16 : i === 0 ? 6 : 12};
+  });
+  ws.getRow(1).font = {bold: true}; ws.getRow(1).alignment = {horizontal:'center'};
+
+  var imgLoads = [];
+  var imgCount = 0;
+  for (var i = 0; i < entries.length; i++) {
+    (function(e, idx) {
+      var row = ws.addRow([idx + 1, e.number || '', e.urgency || '', e.sender || '', e.docnum || '',
+        e.regdate || '', e.deadline || '', e.title || '', e.opinion || '', e.leader || '', e.handler || '', '']);
+      row.height = 60;
+      if (e.hasImage) {
+        imgLoads.push(
+          getImage(e.id).then(function(d) {
+            if (d) {
+              var b64 = d.split(',')[1];
+              var imgId = wb.addImage({base64: b64, extension: 'jpeg'});
+              ws.addImage(imgId, {tl: {col: 11, row: idx + 2}, ext: {width: 80, height: 60}, editAs: 'oneCell'});
+              imgCount++;
+            }
+          }).catch(function() {})
+        );
+      }
+    })(entries[i], i);
+  }
+
+  Promise.all(imgLoads).then(function() {
+    return wb.xlsx.writeBuffer();
+  }).then(function(buf) {
+    if (withZip) {
+      var zip = new JSZip();
+      zip.file('公文收文_' + new Date().toISOString().slice(0, 10) + '.xlsx', buf);
+      var zipCount = 0;
+      var zipLoads = [];
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].hasImage) {
+          (function(e) {
+            zipLoads.push(
+              getImage(e.id).then(function(d) {
+                if (d) {
+                  var fn = (e.number || e.id) + '_' + (e.regdate || '').replace(/-/g, '') + '.jpg';
+                  zip.file('图片/' + fn, d.split(',')[1], {base64: true});
+                  zipCount++;
+                }
+              }).catch(function() {})
+            );
+          })(entries[i]);
+        }
+      }
+      Promise.all(zipLoads).then(function() {
+        return zip.generateAsync({type: 'blob'});
+      }).then(function(blob) {
+        downloadBlob(blob, '公文备份_' + new Date().toISOString().slice(0, 10) + '.zip');
+        showToast('✅ ZIP已导出(' + zipCount + '张图)');
+      });
+    } else {
+      downloadBlob(new Blob([buf], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+        '公文收文_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+      showToast('✅ Excel已导出(' + imgCount + '张缩略图)');
+    }
+  });
+}
+
+function downloadBlob(blob, name) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ============================================================
+   §16 CSV 导出（纯文本，轻量）
+   ============================================================ */
+
+function exportCSV() {
+  var entries = getEntries();
+  if (!entries.length) return showToast('⚠ 无记录');
+
+  var bom = '\uFEFF';
+  var headers = ['序号','编号','紧急程度','来文单位','文号','登记日期','办理时限','标题','拟办意见','领导批示','承办'];
+  var csv = bom + headers.join(',') + '\n';
+
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
+    csv += [i + 1, csvCell(e.number), csvCell(e.urgency), csvCell(e.sender), csvCell(e.docnum),
+      csvCell(e.regdate), csvCell(e.deadline), csvCell(e.title), csvCell(e.opinion), csvCell(e.leader), csvCell(e.handler)].join(',') + '\n';
+  }
+
+  var blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  downloadBlob(blob, '公文收文_' + new Date().toISOString().slice(0, 10) + '.csv');
+  showToast('✅ CSV 已导出');
+}
+
+function csvCell(val) {
+  val = (val || '').toString().replace(/"/g, '""');
+  return '"' + val + '"';
+}
+
+/* ============================================================
+   §17 设置管理
+   ============================================================ */
+
+function loadSettingsUI() {
+  var cred = getBaiduCredentials();
+  if (cred) {
+    document.getElementById('s_apikey').value = cred.apiKey;
+    document.getElementById('s_secretkey').value = cred.secretKey;
+  }
+  // CORS代理
+  var proxy = localStorage.getItem('baidu_cors_proxy') || '';
+  if (document.getElementById('s_cors_proxy')) {
+    document.getElementById('s_cors_proxy').value = proxy;
+  }
+  // OCR.space Key
+  var ocrsKey = localStorage.getItem(OCRSPACE_KEY) || '';
+  if (document.getElementById('s_ocrspace_key')) {
+    document.getElementById('s_ocrspace_key').value = ocrsKey;
+  }
+  // OCR.space CORS代理
+  var ocrsProxy = localStorage.getItem(OCRSPACE_PROXY) || '';
+  if (document.getElementById('s_ocrspace_proxy')) {
+    document.getElementById('s_ocrspace_proxy').value = ocrsProxy;
+  }
+  // 引擎选择
+  var engine = localStorage.getItem('gwsw_engine') || 'ocrspace';
+  var radioEngine = document.querySelector('input[name=ocrEngine][value="' + engine + '"]');
+  if (radioEngine) radioEngine.checked = true;
+
+  // 识别模式
+  var mode = localStorage.getItem('gwsw_ocr_mode') || 'crop';
+  var radioMode = document.querySelector('input[name=ocrMode][value="' + mode + '"]');
+  if (radioMode) radioMode.checked = true;
+
+  // 引擎状态
+  updateEngineStatus();
+}
+
+function saveOcrSpaceSettings() {
+  var key = document.getElementById('s_ocrspace_key').value.trim();
+  if (key) {
+    localStorage.setItem(OCRSPACE_KEY, key);
+  } else {
+    localStorage.removeItem(OCRSPACE_KEY);
+  }
+  var proxy = document.getElementById('s_ocrspace_proxy').value.trim();
+  if (proxy) {
+    localStorage.setItem(OCRSPACE_PROXY, proxy);
+  } else {
+    localStorage.removeItem(OCRSPACE_PROXY);
+  }
+  // 自动切换到OCR.space引擎
+  var radio = document.querySelector('input[name=ocrEngine][value="ocrspace"]');
+  if (radio) radio.checked = true;
+  localStorage.setItem('gwsw_engine', 'ocrspace');
+  showToast('✅ OCR.space配置已保存');
+  updateEngineStatus();
+}
+
+function testOcrSpaceOCR() {
+  var key = document.getElementById('s_ocrspace_key').value.trim();
+  // 临时保存
+  if (key) localStorage.setItem(OCRSPACE_KEY, key);
+  else localStorage.removeItem(OCRSPACE_KEY);
+  var proxy = document.getElementById('s_ocrspace_proxy').value.trim();
+  if (proxy) localStorage.setItem(OCRSPACE_PROXY, proxy);
+  else localStorage.removeItem(OCRSPACE_PROXY);
+
+  showToast('🧪 测试中...');
+  var c = document.createElement('canvas');
+  c.width = 100; c.height = 30;
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 100, 30);
+  ctx.fillStyle = '#000'; ctx.font = '16px sans-serif';
+  ctx.fillText('测试', 10, 22);
+  var testBase64 = c.toDataURL('image/jpeg');
+
+  ocrSpaceRecognize(testBase64).then(function(d) {
+    showToast('✅ OCR.space连接成功！配置正确');
+    updateEngineStatus();
+  }).catch(function(err) {
+    var msg = err.message || '未知错误';
+    showToast('❌ 测试失败: ' + msg);
+  });
+}
+
+function saveBaiduSettings() {
+  var ak = document.getElementById('s_apikey').value.trim();
+  var sk = document.getElementById('s_secretkey').value.trim();
+  if (!ak || !sk) return showToast('⚠ 请填写API Key和Secret Key');
+
+  localStorage.setItem(BAIDU_API_KEY, ak);
+  localStorage.setItem(BAIDU_SECRET_KEY, sk);
+  // CORS代理
+  var proxy = document.getElementById('s_cors_proxy') ? document.getElementById('s_cors_proxy').value.trim() : '';
+  if (proxy) localStorage.setItem('baidu_cors_proxy', proxy);
+  else localStorage.removeItem('baidu_cors_proxy');
+  // 清除旧token
+  localStorage.removeItem(BAIDU_TOKEN_KEY);
+  baiduTokenCache = null;
+
+  // 自动切换到百度引擎
+  var radio = document.querySelector('input[name=ocrEngine][value="baidu"]');
+  if (radio) radio.checked = true;
+  localStorage.setItem('gwsw_engine', 'baidu');
+
+  showToast('✅ 百度OCR配置已保存');
+  updateEngineStatus();
+}
+
+function testBaiduOCR() {
+  var ak = document.getElementById('s_apikey').value.trim();
+  var sk = document.getElementById('s_secretkey').value.trim();
+  if (!ak || !sk) return showToast('⚠ 请先填写配置');
+
+  showToast('🧪 测试中...');
+  var oldAk = localStorage.getItem(BAIDU_API_KEY);
+  var oldSk = localStorage.getItem(BAIDU_SECRET_KEY);
+  var oldProxy = localStorage.getItem('baidu_cors_proxy');
+  localStorage.setItem(BAIDU_API_KEY, ak);
+  localStorage.setItem(BAIDU_SECRET_KEY, sk);
+  var proxy = document.getElementById('s_cors_proxy') ? document.getElementById('s_cors_proxy').value.trim() : '';
+  if (proxy) localStorage.setItem('baidu_cors_proxy', proxy);
+  else localStorage.removeItem('baidu_cors_proxy');
+  baiduTokenCache = null;
+
+  getBaiduToken().then(function(token) {
+    var c = document.createElement('canvas');
+    c.width = 1; c.height = 1;
+    var testBase64 = c.toDataURL('image/jpeg');
+    return baiduRecognize(testBase64, token);
+  }).then(function() {
+    showToast('✅ 百度OCR连接成功！配置正确');
+    updateEngineStatus();
+  }).catch(function(err) {
+    // 恢复旧配置
+    if (oldAk) localStorage.setItem(BAIDU_API_KEY, oldAk);
+    else localStorage.removeItem(BAIDU_API_KEY);
+    if (oldSk) localStorage.setItem(BAIDU_SECRET_KEY, oldSk);
+    else localStorage.removeItem(BAIDU_SECRET_KEY);
+    if (oldProxy) localStorage.setItem('baidu_cors_proxy', oldProxy);
+    else localStorage.removeItem('baidu_cors_proxy');
+    baiduTokenCache = null;
+
+    var msg = err.message || '未知错误';
+    if (msg.indexOf('Failed to fetch') >= 0 || msg.indexOf('NetworkError') >= 0) {
+      msg = '网络连接失败（可能受CORS限制，请配置CORS代理地址）';
+    }
+    showToast('❌ 测试失败: ' + msg);
+    updateEngineStatus();
+  });
+}
+
+function updateEngineStatus() {
+  var statusEl = document.getElementById('engineStatus');
+  if (!statusEl) return;
+  var ocrsKey = localStorage.getItem(OCRSPACE_KEY);
+  var ocrsProxy = localStorage.getItem(OCRSPACE_PROXY);
+  var cred = getBaiduCredentials();
+  var baiduProxy = localStorage.getItem('baidu_cors_proxy');
+  var parts = [];
+  parts.push('<span class="dot ' + (ocrsProxy ? 'dot-green' : 'dot-yellow') + '"></span> OCR.space：' + (ocrsKey ? '专属Key' : '免费Key') + (ocrsProxy ? '（含代理✓）' : '（⚠未配CORS代理）'));
+  if (cred) {
+    parts.push('<span class="dot ' + (baiduProxy ? 'dot-green' : 'dot-yellow') + '"></span> 百度OCR：已配置' + (baiduProxy ? '（含代理✓）' : '（⚠未配CORS代理）'));
+  }
+  statusEl.innerHTML = parts.join('<br>');
+}
+
+// 监听引擎和模式切换
+document.addEventListener('change', function(e) {
+  if (e.target.name === 'ocrEngine') {
+    localStorage.setItem('gwsw_engine', e.target.value);
+    updateEngineStatus();
+  }
+  if (e.target.name === 'ocrMode') {
+    localStorage.setItem('gwsw_ocr_mode', e.target.value);
+  }
+});
+
+/* ============================================================
+   §17.5 模板校准
+   ============================================================ */
+
+function handleCalibration(e) {
+  var f = e.target.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var img = new Image();
+    img.src = ev.target.result;
+    img.onload = function() {
+      // 使用当前OCR引擎识别模板，自动检测字段位置
+      var engine = getOCREngine();
+      if (engine === 'tesseract') {
+        showToast('⚠ 模板校准需要云端OCR（OCR.space或百度），请先配置');
+        return;
+      }
+
+      showToast('📐 校准中...');
+
+      // 准备图片
+      var c = document.createElement('canvas');
+      var w = img.naturalWidth || img.width;
+      var h = img.naturalHeight || img.height;
+      var maxDim = 2000;
+      if (Math.max(w,h) > maxDim) {
+        var rr = maxDim / Math.max(w,h);
+        w = Math.round(w * rr); h = Math.round(h * rr);
+      }
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var base64 = c.toDataURL('image/jpeg', 0.8);
+
+      var ocrPromise;
+      if (engine === 'ocrspace') {
+        ocrPromise = ocrSpaceRecognize(base64);
+      } else {
+        ocrPromise = getBaiduToken().then(function(token) {
+          return baiduRecognize(base64, token);
+        });
+      }
+
+      ocrPromise.then(function(data) {
+        // 统一提取文字行和位置
+        var lines = [];
+        if (data.ParsedResults && data.ParsedResults.length) {
+          // OCR.space 格式
+          var overlay = data.ParsedResults[0].TextOverlay;
+          if (overlay && overlay.Lines) {
+            overlay.Lines.forEach(function(line) {
+              line.Words.forEach(function(word) {
+                lines.push({text: word.WordText, left: word.Left, top: word.Top, width: word.Width, height: word.Height});
+              });
+            });
+          }
+          // 如果没有overlay，使用文本内容
+          if (!lines.length && data.ParsedResults[0].ParsedText) {
+            // 按行分割，估算位置（不够精确但可用）
+            var textLines = data.ParsedResults[0].ParsedText.split('\n');
+            var lineH = h / Math.max(textLines.length, 1);
+            textLines.forEach(function(tl, idx) {
+              if (tl.trim()) lines.push({text: tl, left: 0, top: idx * lineH, width: w, height: lineH});
+            });
+          }
+        } else if (data.words_result) {
+          // 百度OCR 格式
+          data.words_result.forEach(function(wr) {
+            var loc = wr.location;
+            lines.push({text: wr.words, left: loc.left, top: loc.top, width: loc.width, height: loc.height});
+          });
+        }
+
+        if (!lines.length) throw new Error('识别结果为空');
+
+        // 自动检测字段标签位置
+        var fieldLabels = {
+          'id_row':     ['编号', '紧急程度'],
+          'sender_row': ['来文单位', '来文字号'],
+          'date_row':   ['登记日期', '办理时限'],
+          'title':      ['文件标题'],
+          'opinion':    ['拟办意见'],
+          'leader':     ['领导批示'],
+          'handler':    ['承办']
+        };
+
+        var template = {};
+        Object.keys(fieldLabels).forEach(function(key) {
+          var labels = fieldLabels[key];
+          var matches = lines.filter(function(l) {
+            return labels.some(function(lb) { return l.text.indexOf(lb) >= 0; });
+          });
+          if (matches.length > 0) {
+            var minLeft = 1, minTop = 1, maxRight = 0, maxBottom = 0;
+            matches.forEach(function(m) {
+              var l = m.left / w;
+              var t = m.top / h;
+              var r = (m.left + m.width) / w;
+              var b = (m.top + m.height * 2) / h; // 向下扩展一行高度
+              if (l < minLeft) minLeft = l;
+              if (t < minTop) minTop = t;
+              if (r > maxRight) maxRight = r;
+              if (b > maxBottom) maxBottom = b;
+            });
+            var pad = 0.02;
+            template[key] = {
+              left:   Math.max(0, minLeft - pad),
+              top:    Math.max(0, minTop - pad),
+              width:  Math.min(1 - minLeft + pad, maxRight - minLeft + pad * 2),
+              height: Math.min(1 - minTop + pad, maxBottom - minTop + pad * 2)
+            };
+          }
+        });
+
+        if (Object.keys(template).length >= 5) {
+          localStorage.setItem('gwsw_template', JSON.stringify(template));
+          var resultEl = document.getElementById('calibResult');
+          resultEl.style.display = 'block';
+          resultEl.innerHTML = '<div class="alert alert-success">✅ 校准成功！识别到 ' + Object.keys(template).length + ' 个字段区域</div>';
+          showToast('✅ 模板校准完成');
+        } else {
+          showToast('⚠ 校准结果不完整，请确保图片清晰且包含所有字段标签');
+        }
+      }).catch(function(err) {
+        showToast('❌ 校准失败: ' + (err.message || '未知'));
+      });
+    };
+  };
+  reader.readAsDataURL(f);
+}
+
+function resetCalibration() {
+  localStorage.removeItem('gwsw_template');
+  var resultEl = document.getElementById('calibResult');
+  if (resultEl) { resultEl.style.display = 'none'; resultEl.innerHTML = ''; }
+  showToast('✅ 已恢复默认模板');
+}
+
+/* ============================================================
+   §17.6 数据管理
+   ============================================================ */
+
+function showStorageInfo() {
+  var entries = getEntries();
+  var imgCount = entries.filter(function(e) { return e.hasImage; }).length;
+  var totalSize = new Blob([JSON.stringify(entries)]).size;
+  var sizeStr = totalSize > 1048576 ? (totalSize / 1048576).toFixed(1) + 'MB' : (totalSize / 1024).toFixed(1) + 'KB';
+
+  var info = '📊 存储信息\n\n' +
+    '记录总数：' + entries.length + ' 条\n' +
+    '含图片记录：' + imgCount + ' 条\n' +
+    '元数据大小：' + sizeStr + '\n' +
+    '图片存储：IndexedDB（独立空间）\n' +
+    'OCR引擎：' + (function() { var e = getOCREngine(); return e === 'ocrspace' ? 'OCR.space' : e === 'baidu' ? '百度OCR' : 'Tesseract.js'; })();
+
+  alert(info);
+}
+
+function clearAllImages() {
+  if (!confirm('确定清理所有图片？文字记录将保留。')) return;
+  var entries = getEntries();
+  var ids = entries.filter(function(e) { return e.hasImage; }).map(function(e) { return e.id; });
+  var chain = Promise.resolve();
+  ids.forEach(function(id) {
+    chain = chain.then(function() { return deleteImage(id); });
+  });
+  chain.then(function() {
+    entries.forEach(function(e) { e.hasImage = false; });
+    saveEntries(entries);
+    showToast('✅ 已清理 ' + ids.length + ' 张图片');
+    renderList();
+  });
+}
+
+function exportAllData() {
+  var entries = getEntries();
+  if (!entries.length) return showToast('⚠ 无数据');
+  var json = JSON.stringify(entries, null, 2);
+  var blob = new Blob([json], {type: 'application/json'});
+  downloadBlob(blob, '公文收文数据_' + new Date().toISOString().slice(0, 10) + '.json');
+  showToast('✅ 数据已导出');
+}
+
+function importData() {
+  document.getElementById('importInput').click();
+}
+
+function handleImport(e) {
+  var f = e.target.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error('格式错误');
+      var list = getEntries();
+      var existIds = {};
+      list.forEach(function(e) { existIds[e.id] = true; });
+      var newCount = 0;
+      imported.forEach(function(e) {
+        if (e.id && !existIds[e.id]) { list.push(e); newCount++; }
+      });
+      list.sort(function(a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+      saveEntries(list);
+      showToast('✅ 导入 ' + newCount + ' 条新记录');
+      renderList();
+    } catch(err) {
+      showToast('❌ 导入失败: ' + err.message);
+    }
+  };
+  reader.readAsText(f);
+  e.target.value = '';
+}
+
+/* ============================================================
+   §18 UI 工具函数
+   ============================================================ */
+
+function showToast(msg, interactive) {
+  var el = document.getElementById('toast');
+  if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+  el.classList.remove('show', 'interactive');
+  el.textContent = msg;
+  if (interactive) { el.classList.add('interactive'); el.innerHTML = interactive; }
+  el.classList.add('show');
+  toastTimer = setTimeout(function() {
+    el.classList.remove('show');
+    toastTimer = null;
+  }, interactive ? 6000 : 2500);
+}
+
+function updateProgress(pct, msg) {
+  var fill = document.getElementById('progressFill');
+  var detail = document.getElementById('progressDetail');
+  if (fill) fill.style.width = pct + '%';
+  if (detail) detail.textContent = msg;
+}
+
+function show(id) { var el = document.getElementById(id); if (el) el.style.display = ''; }
+function hide(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; }
+
+/* ============================================================
+   §19 全局错误处理
+   ============================================================ */
+window.addEventListener('error', function(e) {
+  console.error('全局错误:', e.message, e.filename, e.lineno);
+});
+
+/* ============================================================
+   §20 初始化
+   ============================================================ */
+
+// 预初始化 IndexedDB
+initImageDB().catch(function() {
+  console.warn('IndexedDB 不可用，图片功能将受限');
+});
+
+// 加载设置UI
+loadSettingsUI();
+
+// 渲染列表
+renderList();
+
+// 显示引擎状态提示
+(function() {
+  var engine = localStorage.getItem('gwsw_engine') || 'ocrspace';
+  var hint = document.getElementById('ocrEngineHint');
+  if (hint) {
+    if (engine === 'ocrspace') {
+      hint.innerHTML = '🧠 当前引擎：<span class="engine-name">OCR.space</span> <span class="engine-badge baidu">推荐</span>';
+    } else if (engine === 'baidu') {
+      hint.innerHTML = '🧠 当前引擎：<span class="engine-name">百度OCR</span> <span class="engine-badge baidu">精准</span>';
+    } else {
+      hint.innerHTML = '🧠 当前引擎：<span class="engine-name">Tesseract.js</span> <span class="engine-badge tesseract">离线</span>';
+    }
+  }
+})();
+</script>
+</body>
+</html>
