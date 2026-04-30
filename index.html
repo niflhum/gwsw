@@ -1472,13 +1472,15 @@ function extractFields(raw) {
   // 关键：保留换行结构用于字段边界定位，另存一份合并版用于正则匹配
   var tClean = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   var tFlat = tClean.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  // rawOriginal：只做最小清理（去\r），保留完整换行结构用于docnum等需要逐行解析的字段
+  var tRaw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/[ \t]+/g, ' ');
   return {
     id:       extractId(tFlat),
     urgency:  extractUrgency(tFlat),
     sender:   extractSender(tFlat),
-    docnum:   extractDocNum(tFlat),
-    regdate:  extractRegDate(tFlat),
-    deadline: extractDeadline(tFlat),
+    docnum:   extractDocNum(tRaw),
+    regdate:  extractRegDate(tRaw),
+    deadline: extractDeadline(tRaw),
     title:    extractTitle2(tClean),
     opinion:  extractOpinion2(tClean),
     leader:   extractLeader2(tClean),
@@ -1521,10 +1523,28 @@ function extractSender(t) {
 }
 
 function extractDocNum(t) {
-  var m = t.match(/来文字号[：:\s]*([\u4e00-\u9fa50-9【\]〔〕\[\(\(（\)\)第号]+?)(?:\s{2,}|[=＝]|登记日期|办理时限|文件标题|拟办|领导|承办|$)/);
-  if (m) { var v = m[1].replace(/[=＝\s]+$/, '').trim(); if (v && !/^[函通知\s=＝]+$/.test(v)) return v; }
-  m = t.match(/来文字号[：:\s]*(通知|函|电话通知单?|电话记录|便函|传真|邮件)(?:\s|$|[=＝])/);
-  return m ? m[1] : '';
+  // t保留换行：来文字号后可能隔了"密级"行
+  // 策略1：来文字号后面直接跟字号（同行或隔空格）
+  var m = t.match(/来文字号[：:\s]*([\u4e00-\u9fa50-9【】〔〕\[\(\（\)）〕〔〕第号（）]+?)(?:\n|$)/);
+  if (m) { var v = m[1].replace(/[=＝\s]+$/, '').trim(); if (v && v.length >= 2 && !/^(密级|内部|一般|紧急|秘密|机密|函通知)$/i.test(v)) return v; }
+  // 策略2：跳过"密级：xxx"干扰行，找下一行的字号
+  var idx = t.indexOf('来文字号');
+  if (idx >= 0) {
+    var sub = t.substring(idx).replace(/^[^：:\n]*[：:\s]*/, '');
+    // 找连续的中文+数字行（2-4行），跳过"密级"行
+    var lines = sub.split('\n');
+    var parts = [];
+    for (var i = 0; i < lines.length && i < 5; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      if (/^密级/.test(line)) continue; // 跳过密级行
+      if (/^(登记日期|办理时限|文件标题|拟办|领导|承办)/.test(line)) break; // 下一个字段
+      parts.push(line);
+    }
+    var joined = parts.join('').replace(/密级[：:\s]*[\u4e00-\u9fa5]+/, '').replace(/内部/g, '').trim();
+    if (joined.length >= 3 && joined.length <= 50) return joined;
+  }
+  return '';
 }
 
 function extractRegDate(t) {
