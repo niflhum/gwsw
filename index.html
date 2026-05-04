@@ -1495,38 +1495,31 @@ async function runTesseractOCR(img) {
   try {
     updateProgress(5, '加载Tesseract.js引擎...');
     if (!tesseractLoaded) {
-      // 从全局 Tesseract 变量获取 createWorker（通过 CDN script 标签加载）
-      if (typeof Tesseract === 'undefined') {
-        throw new Error('Tesseract.js 库未加载，请检查网络');
+      // Tesseract.js v5 API: createWorker(lang, oem, options) — 直接返回初始化好的 worker
+      if (typeof Tesseract === 'undefined' || typeof Tesseract.createWorker !== 'function') {
+        throw new Error('Tesseract.js v5 库未加载，请检查网络');
       }
-      worker = Tesseract.createWorker({
-        logger: (m) => {
-          if (m.status === 'recognizing text')
-            updateProgress(20 + Math.round(m.progress * 70), `识别 ${Math.round(m.progress * 100)}%`);
-          else if (m.status === 'loading language traineddata')
-            updateProgress(14, '下载语言包...');
-        },
-        errorHandler: (err) => console.warn('Tesseract错误:', err),
-        langPath: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? '/tesseract-lang'
-          : 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/'
-        // 本地开发: /tesseract-lang；部署: jsdelivr CDN
-      });
-      // 首次加载加30秒超时保护 — 防止CDN慢或网络不通时挂住
-      await Promise.race([
-        worker.load(),
+      // 首次加载加30秒超时保护
+      worker = await Promise.race([
+        Tesseract.createWorker('chi_sim', 1, {
+          logger: (m) => {
+            if (m.status === 'recognizing text')
+              updateProgress(20 + Math.round(m.progress * 70), `识别 ${Math.round(m.progress * 100)}%`);
+            else if (m.status && m.status.includes('loading'))
+              updateProgress(10, '加载语言包...');
+          },
+          errorHandler: (err) => console.warn('Tesseract警告:', err)
+        }),
         new Promise(function(_, reject) {
           setTimeout(function() {
             reject(new Error('Tesseract引擎加载超时(30s)，请检查网络'));
           }, 30000);
         })
       ]);
-      await worker.loadLanguage('chi_sim'); // 加载中文语言包
-      await worker.initialize('chi_sim');
       tesseractLoaded = true;
     }
 
-    // 图片预处理（已包含在原代码中，保留灰度增强等操作）
+    // 图片识别
     updateProgress(50, '开始OCR识别...');
     const { data } = await worker.recognize(img);
     const text = data.text;
